@@ -73,6 +73,15 @@ Bump both before a release; nothing else has to be edited.
 python3 logo/make-icons.py              # logo/Page 3.svg -> all icons (needs rsvg-convert)
 ```
 
+## Optional runtime tools
+
+The desktop app starts with nothing else installed. These are used when present:
+
+| Tool | Used for |
+| --- | --- |
+| `xdotool`, `wtype`, `ydotool` | typing into other applications (per session, see the user guide) |
+| `ffmpeg` / `ffprobe` | reading MP3, OGG, FLAC, M4A, … in the **Transcribe** tab (WAV needs nothing) |
+
 ## Tests
 
 ```bash

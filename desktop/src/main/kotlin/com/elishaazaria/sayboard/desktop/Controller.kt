@@ -62,6 +62,28 @@ class AppController {
 
     private var hotkeyError: String? = null
 
+    // -------------------------------------------------------------- transcription
+    var transcriptionFile by mutableStateOf<File?>(null)
+        private set
+
+    var transcriptionProgress by mutableStateOf<Float?>(null)
+        private set
+
+    var transcriptionRunning by mutableStateOf(false)
+        private set
+
+    var transcript by mutableStateOf<Transcript?>(null)
+        private set
+
+    var transcriptionError by mutableStateOf<String?>(null)
+        private set
+
+    var transcriptionUsesFfmpeg by mutableStateOf(false)
+        private set
+
+    private var transcriptionCancelled = false
+    private val transcriber by lazy { AudioTranscriber(engine) }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val engine = RecognitionEngine()
     private val hotkeys = GlobalHotkeys()
@@ -491,6 +513,95 @@ class AppController {
         if (engine.isRunning) engine.stop()
         engine.unloadModel()
         log("Model unloaded from memory")
+    }
+
+    // ------------------------------------------------------------ transcription
+
+    fun chooseTranscriptionFile(file: File) {
+        if (transcriptionRunning) return
+        transcriptionFile = file
+        transcript = null
+        transcriptionError = null
+        transcriptionUsesFfmpeg = !AudioFileReader.isWav(file)
+        log("Audio file: ${file.name} (${formatBytes(file.length())})")
+        if (!AudioFileReader.canRead(file)) {
+            transcriptionError = strings.f("transcribe.ffmpeg", strings["transcribe.ffmpegHint"])
+        }
+    }
+
+    fun startTranscription() {
+        val file = transcriptionFile ?: return
+        if (transcriptionRunning) return
+        val modelName = config.model
+        val installed = modelName.takeIf { it.isNotBlank() }?.let { ModelStore.installed(it) }
+        if (installed == null) {
+            transcriptionError = strings["transcribe.noModel"]
+            return
+        }
+        transcriptionCancelled = false
+        transcriptionRunning = true
+        transcriptionProgress = null
+        transcriptionError = null
+        transcript = null
+        log("Transcribing ${file.name} with ${installed.name}")
+        scope.launch {
+            try {
+                val result = transcriber.transcribe(
+                    modelPath = installed.directory.absolutePath,
+                    file = file,
+                    onProgress = { value -> transcriptionProgress = value },
+                    isCancelled = { transcriptionCancelled },
+                )
+                transcript = result
+                transcriptionProgress = 1f
+                log("Transcribed ${result.file.name}: ${result.lines.size} sentences")
+            } catch (e: TranscriptionException) {
+                if (transcriptionCancelled) {
+                    log("Transcription cancelled")
+                } else {
+                    transcriptionError = strings.f("transcribe.failed", e.message ?: "")
+                    log("Transcription failed: ${e.message}")
+                }
+            } catch (e: Exception) {
+                transcriptionError = strings.f("transcribe.failed", e.message ?: e.javaClass.simpleName)
+                log("Transcription failed: ${e.message}")
+            } finally {
+                transcriptionRunning = false
+                if (transcriptionCancelled) transcriptionProgress = null
+            }
+        }
+    }
+
+    fun cancelTranscription() {
+        transcriptionCancelled = true
+        log("Cancelling the transcription…")
+    }
+
+    fun copyTranscript(withTimecodes: Boolean) {
+        val result = transcript ?: return
+        val text = if (withTimecodes) result.textWithTimecodes() else result.text
+        copyToClipboard(text)
+    }
+
+    fun saveTranscript(target: File): Boolean {
+        val result = transcript ?: return false
+        return try {
+            target.writeText(result.text + "\n")
+            log(strings.f("transcribe.saved", target.absolutePath))
+            true
+        } catch (e: Exception) {
+            log(strings.f("transcribe.failed", e.message ?: ""))
+            false
+        }
+    }
+
+    fun suggestedTranscriptName(): String {
+        val file = transcriptionFile ?: return "transcript.txt"
+        return if (AudioFileReader.isWav(file)) {
+            file.nameWithoutExtension.ifBlank { "transcript" } + ".txt"
+        } else {
+            file.nameWithoutExtension.ifBlank { "transcript" } + ".txt"
+        }
     }
 
     // -------------------------------------------------------------------- misc

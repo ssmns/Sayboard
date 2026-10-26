@@ -45,6 +45,7 @@ Alpine/musl are not supported by the official Vosk native library. See
 - **Models** — left: installed models (use / export as .zip / delete), right: the
   catalog with search and a language filter. Downloads run in the background and
   resume after a broken connection.
+- **Transcribe** — turn an audio file into text (see below).
 - **Settings** — hotkey, microphone, typing method, live typing, automatic space,
   capitalization, clipboard copying, tray behaviour, and the **models folder**.
 - **About** — version, developer, license, credits, folders in use, links, and a

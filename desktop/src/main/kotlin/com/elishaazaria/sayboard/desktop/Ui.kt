@@ -1,5 +1,7 @@
 package com.elishaazaria.sayboard.desktop
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,34 +19,62 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.AlertDialog
-import androidx.compose.material.Button
-import androidx.compose.material.Card
-import androidx.compose.material.Checkbox
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Divider
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Surface
-import androidx.compose.material.Tab
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
-import androidx.compose.material.lightColors
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Typography
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +86,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -67,23 +98,70 @@ import java.awt.Desktop
 import java.io.File
 import javax.swing.JFileChooser
 
-/** The Persian/Latin font that ships inside the app, so no font is missing. */
-private val AppFontFamily = androidx.compose.ui.text.font.FontFamily(
+// ------------------------------------------------------------------------ theme
+
+private val PageBackground = Color(0xFFF4F6F9)
+private val Ink = Color(0xFF171A21)
+private val Teal = Color(0xFF00796B)
+private val Maroon = Color(0xFF8E2A2A)
+private val Line = Color(0xFFE5E8EE)
+private val MutedInk = Color(0xFF5C6373)
+private val OkGreen = Color(0xFF1B7F3B)
+private val WarnAmber = Color(0xFFB26A00)
+
+private val AppFontFamily = FontFamily(
     androidx.compose.ui.text.platform.Font("fonts/Vazirmatn-Regular.ttf", FontWeight.Normal),
     androidx.compose.ui.text.platform.Font("fonts/Vazirmatn-Medium.ttf", FontWeight.Medium),
     androidx.compose.ui.text.platform.Font("fonts/Vazirmatn-Bold.ttf", FontWeight.Bold),
 )
 
-private val AppTypography = androidx.compose.material.Typography(defaultFontFamily = AppFontFamily)
+private val AppTypography: Typography = Typography().run {
+    copy(
+        displayLarge = displayLarge.copy(fontFamily = AppFontFamily),
+        displayMedium = displayMedium.copy(fontFamily = AppFontFamily),
+        displaySmall = displaySmall.copy(fontFamily = AppFontFamily),
+        headlineLarge = headlineLarge.copy(fontFamily = AppFontFamily),
+        headlineMedium = headlineMedium.copy(fontFamily = AppFontFamily),
+        headlineSmall = headlineSmall.copy(fontFamily = AppFontFamily),
+        titleLarge = titleLarge.copy(fontFamily = AppFontFamily),
+        titleMedium = titleMedium.copy(fontFamily = AppFontFamily),
+        titleSmall = titleSmall.copy(fontFamily = AppFontFamily),
+        bodyLarge = bodyLarge.copy(fontFamily = AppFontFamily),
+        bodyMedium = bodyMedium.copy(fontFamily = AppFontFamily),
+        bodySmall = bodySmall.copy(fontFamily = AppFontFamily),
+        labelLarge = labelLarge.copy(fontFamily = AppFontFamily),
+        labelMedium = labelMedium.copy(fontFamily = AppFontFamily),
+        labelSmall = labelSmall.copy(fontFamily = AppFontFamily),
+    )
+}
 
-private val Primary = Color(0xFF3F51B5)
-private val PrimaryDark = Color(0xFF2C3A8C)
-private val Muted = Color(0xFF767C8A)
-private val Background = Color(0xFFF4F6FA)
-private val CardBorder = Color(0xFFE2E6EF)
-private val OkGreen = Color(0xFF1B7F3B)
-private val WarnAmber = Color(0xFFB26A00)
-private val CardShape = RoundedCornerShape(12.dp)
+private val AppColors = lightColorScheme(
+    primary = Teal,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD3EDE8),
+    onPrimaryContainer = Color(0xFF00382F),
+    secondary = Maroon,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF6E1E1),
+    onSecondaryContainer = Color(0xFF400B0B),
+    tertiary = Color(0xFF3F51B5),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFE1E4FA),
+    onTertiaryContainer = Color(0xFF16204F),
+    background = PageBackground,
+    onBackground = Ink,
+    surface = Color.White,
+    onSurface = Ink,
+    surfaceVariant = Color(0xFFEEF1F5),
+    onSurfaceVariant = MutedInk,
+    outline = Color(0xFFB5BCCA),
+    outlineVariant = Line,
+    error = Color(0xFFB3261E),
+    errorContainer = Color(0xFFFCEDEC),
+    onErrorContainer = Color(0xFF5F1510),
+)
+
+private val CardShape = RoundedCornerShape(22.dp)
 
 internal val LocalStrings = compositionLocalOf { Strings.english }
 
@@ -111,63 +189,36 @@ internal fun LtrText(
     }
 }
 
+private enum class Screen { MODELS, TRANSCRIBE, SETTINGS, ABOUT }
+
+// ------------------------------------------------------------------------ shell
+
 @Composable
 fun AppScreen(controller: AppController) {
     val s = controller.strings
     val direction = if (s.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
     CompositionLocalProvider(LocalStrings provides s, LocalLayoutDirection provides direction) {
-        MaterialTheme(
-            typography = AppTypography,
-            colors = lightColors(
-                primary = Primary,
-                primaryVariant = PrimaryDark,
-                secondary = OkGreen,
-                background = Background,
-                surface = Color.White,
-            )
-        ) {
-            var tab by remember { mutableStateOf(0) }
+        MaterialTheme(colorScheme = AppColors, typography = AppTypography) {
+            var screen by remember { mutableStateOf(Screen.MODELS) }
             var pendingDownload by remember { mutableStateOf<CatalogModel?>(null) }
             var pendingFolder by remember { mutableStateOf<File?>(null) }
 
-            Surface(Modifier.fillMaxSize(), color = Background) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Box(Modifier.fillMaxSize()) {
-                    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
-                        Header(controller)
-                        PreviewBar(controller)
-                        RequirementsBanner(controller)
-                        Spacer(Modifier.height(12.dp))
-                        TabRow(
-                            selectedTabIndex = tab,
-                            backgroundColor = Color.Transparent,
-                            contentColor = Primary,
-                            modifier = Modifier.width(440.dp),
-                        ) {
-                            Tab(
-                                selected = tab == 0,
-                                onClick = { tab = 0 },
-                                text = { Text(s["tab.models"]) },
-                            )
-                            Tab(
-                                selected = tab == 1,
-                                onClick = { tab = 1 },
-                                text = { Text(s["tab.settings"]) },
-                            )
-                            Tab(
-                                selected = tab == 2,
-                                onClick = { tab = 2 },
-                                text = { Text(s["tab.about"]) },
-                            )
-                        }
-                        Box(Modifier.weight(1f).fillMaxWidth().padding(top = 14.dp)) {
-                            when (tab) {
-                                0 -> ModelsTab(controller) { pendingDownload = it }
-                                1 -> SettingsTab(controller) { pendingFolder = it }
-                                else -> AboutTab(controller)
+                    Row(Modifier.fillMaxSize()) {
+                        SideRail(screen) { screen = it }
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            TopBar(controller, screen)
+                            Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp)) {
+                                when (screen) {
+                                    Screen.MODELS -> ModelsScreen(controller) { pendingDownload = it }
+                                    Screen.TRANSCRIBE -> TranscribeScreen(controller)
+                                    Screen.SETTINGS -> SettingsScreen(controller) { pendingFolder = it }
+                                    Screen.ABOUT -> AboutScreen(controller)
+                                }
                             }
+                            Footer(controller)
                         }
-                        DownloadBar(controller)
-                        LogPane(controller)
                     }
                     if (controller.diagnosticsVisible) {
                         RequirementsPanel(controller)
@@ -185,164 +236,229 @@ fun AppScreen(controller: AppController) {
     }
 }
 
-// ------------------------------------------------------------------------ header
-
 @Composable
-private fun Header(controller: AppController) {
+private fun SideRail(screen: Screen, onSelect: (Screen) -> Unit) {
     val s = LocalStrings.current
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    NavigationRail(
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxHeight().width(108.dp),
+        header = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp),
+            ) {
                 Image(
                     painter = painterResource("icons/saytypist-mark.png"),
                     contentDescription = null,
-                    modifier = Modifier.width(32.dp).height(32.dp),
+                    modifier = Modifier.size(40.dp),
                 )
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    AppInfo.APP_NAME,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E2433),
-                )
-                Spacer(Modifier.width(10.dp))
-                StatusChip(controller.status)
+                Spacer(Modifier.height(6.dp))
+                Text(AppInfo.APP_NAME, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(2.dp))
-            Text(s["app.subtitle"], fontSize = 12.sp, color = Muted)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                s.f("header.hotkey", controller.config.hotkey) + "   ·   " +
-                        s.f("header.typing", controller.typingMethod),
-                fontSize = 12.sp,
-                color = Muted,
+        },
+    ) {
+        RailItem(s["nav.models"], Icons.Default.Folder, screen == Screen.MODELS) {
+            onSelect(Screen.MODELS)
+        }
+        RailItem(s["nav.transcribe"], Icons.Default.LibraryMusic, screen == Screen.TRANSCRIBE) {
+            onSelect(Screen.TRANSCRIBE)
+        }
+        Spacer(Modifier.weight(1f))
+        RailItem(s["nav.settings"], Icons.Default.Settings, screen == Screen.SETTINGS) {
+            onSelect(Screen.SETTINGS)
+        }
+        RailItem(s["nav.about"], Icons.Default.Info, screen == Screen.ABOUT) {
+            onSelect(Screen.ABOUT)
+        }
+        Text(
+            Version.NAME,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 14.dp),
+        )
+    }
+}
+
+@Composable
+private fun RailItem(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
+    NavigationRailItem(
+        selected = selected,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = null) },
+        label = { Text(label, fontSize = 11.sp, maxLines = 1) },
+        alwaysShowLabel = true,
+        colors = NavigationRailItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    )
+}
+
+@Composable
+private fun TopBar(controller: AppController, screen: Screen) {
+    val s = LocalStrings.current
+    val (title, subtitle) = when (screen) {
+        Screen.MODELS -> s["nav.models"] to s["models.hint"]
+        Screen.TRANSCRIBE -> s["transcribe.title"] to s["transcribe.subtitle"]
+        Screen.SETTINGS -> s["nav.settings"] to s["settings.immediate"]
+        Screen.ABOUT -> s["about.title"] to s.f("about.version", Version.NAME)
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+        StatusPill(controller.status)
+        Spacer(Modifier.width(10.dp))
+        LanguageButton(controller)
+        Spacer(Modifier.width(6.dp))
+        IconButton(onClick = { controller.toggleLog() }) {
+            Icon(
+                if (controller.config.logVisible) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (controller.config.logVisible) s["header.hideLog"] else s["header.showLog"],
             )
         }
-        LanguagePicker(controller)
-        Spacer(Modifier.width(8.dp))
-        TextButton(onClick = { controller.toggleLog() }) {
-            Text(
-                if (controller.config.logVisible) s["header.hideLog"] else s["header.showLog"],
-                fontSize = 12.sp,
-            )
-        }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
+        val listening = controller.status == RecognitionState.LISTENING ||
+                controller.status == RecognitionState.LOADING
         Button(
             onClick = { controller.toggleDictation() },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(50),
             modifier = Modifier.height(44.dp),
         ) {
-            Text(
-                if (controller.status == RecognitionState.LISTENING ||
-                    controller.status == RecognitionState.LOADING
-                ) {
-                    s["action.stop"]
-                } else {
-                    s["action.start"]
-                }
-            )
+            Icon(if (listening) Icons.Default.Stop else Icons.Default.Mic, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(if (listening) s["action.stop"] else s["action.start"], fontSize = 13.sp)
         }
     }
 }
 
 @Composable
-private fun StatusChip(state: RecognitionState) {
+private fun StatusPill(state: RecognitionState) {
     val s = LocalStrings.current
     val (label, color) = when (state) {
-        RecognitionState.IDLE -> s["status.idle"] to Muted
+        RecognitionState.IDLE -> s["status.idle"] to MutedInk
         RecognitionState.LOADING -> s["status.loading"] to WarnAmber
         RecognitionState.LISTENING -> s["status.listening"] to OkGreen
-        RecognitionState.ERROR -> s["status.error"] to MaterialTheme.colors.error
+        RecognitionState.ERROR -> s["status.error"] to MaterialTheme.colorScheme.error
     }
-    Box(
-        Modifier
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 10.dp, vertical = 3.dp)
+    Surface(
+        color = color.copy(alpha = 0.10f),
+        shape = CircleShape,
+        border = BorderStroke(1.dp, color.copy(alpha = 0.30f)),
     ) {
-        Text(label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Box(Modifier.size(7.dp).background(color, CircleShape))
+            Spacer(Modifier.width(7.dp))
+            Text(label, fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium)
+        }
     }
 }
 
 @Composable
-private fun LanguagePicker(controller: AppController) {
+private fun LanguageButton(controller: AppController) {
     val s = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
     Box {
-        OutlinedButton(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.height(36.dp),
-        ) {
-            Text("${s.lang.label}  ▾", fontSize = 12.sp)
+        OutlinedButton(onClick = { expanded = true }, shape = CircleShape, modifier = Modifier.height(36.dp)) {
+            Text(s.lang.label, fontSize = 12.sp)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             Lang.values().forEach { lang ->
-                DropdownMenuItem(onClick = {
-                    expanded = false
-                    controller.setLanguage(lang)
-                }) {
-                    Text(lang.label, fontSize = 13.sp)
-                }
+                DropdownMenuItem(
+                    text = { Text(lang.label, fontSize = 13.sp) },
+                    onClick = {
+                        expanded = false
+                        controller.setLanguage(lang)
+                    },
+                )
             }
         }
     }
 }
 
-// ----------------------------------------------------------------------- preview
+// ----------------------------------------------------------------------- footer
 
 @Composable
-private fun PreviewBar(controller: AppController) {
+private fun Footer(controller: AppController) {
     val s = LocalStrings.current
-    if (!controller.config.showPreview) return
-    Spacer(Modifier.height(10.dp))
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = controller.preview.ifBlank { s["preview.hint"] },
-            color = if (controller.preview.isBlank()) Muted else OkGreen,
-            fontSize = 14.sp,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(
-            onClick = { controller.copyLastPhrase() },
-            enabled = controller.lastPhrase.isNotBlank() || controller.preview.isNotBlank(),
-        ) { Text(s["action.copyLast"], fontSize = 12.sp) }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        if (controller.busy) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            ) {
+                val fraction = controller.downloadFraction
+                if (fraction == null) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    LinearProgressIndicator(progress = fraction, modifier = Modifier.weight(1f))
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(controller.downloadLabel, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = { controller.cancelDownload() }) { Text(s["action.cancel"], fontSize = 12.sp) }
+            }
+        }
+        LogPane(controller)
     }
 }
 
-// ------------------------------------------------------------------------ banner
-
 @Composable
-private fun RequirementsBanner(controller: AppController) {
+private fun LogPane(controller: AppController) {
     val s = LocalStrings.current
-    val problems = controller.diagnostics.filter { it.state != CheckState.OK }
-    if (problems.isEmpty()) return
-    val hasError = problems.any { it.state == CheckState.ERROR }
-    val color = if (hasError) Color(0xFFFDECEC) else Color(0xFFFFF7E6)
-    val accent = if (hasError) MaterialTheme.colors.error else WarnAmber
-    Spacer(Modifier.height(10.dp))
-    Surface(color = color, shape = CardShape, modifier = Modifier.fillMaxWidth()) {
+    if (!controller.config.logVisible) {
+        val last = controller.logLines.lastOrNull() ?: return
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         ) {
-            Text(if (hasError) "✖" else "⚠", fontSize = 16.sp, color = accent)
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(problems.first().title, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(problems.first().detail, fontSize = 12.sp, color = Color(0xFF4A4F5C))
+            Text(s["log.lastLabel"], fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(8.dp))
+            LtrText(
+                last,
+                modifier = Modifier.weight(1f),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    val listState = rememberLazyListState()
+    LaunchedEffect(controller.logLines.size) {
+        if (controller.logLines.isNotEmpty()) listState.animateScrollToItem(controller.logLines.size - 1)
+    }
+    Surface(
+        color = Color(0xFF101318),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().height(150.dp).padding(bottom = 14.dp),
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(12.dp)) {
+                items(controller.logLines) { line ->
+                    LtrText(line, fontSize = 11.sp, color = Color(0xFFC9D1D9), fontFamily = FontFamily.Monospace)
+                }
             }
-            TextButton(onClick = { controller.openDiagnostics() }) {
-                Text(s["banner.install"], fontSize = 12.sp)
-            }
+            VerticalScrollbar(
+                adapter = rememberScrollbarAdapter(listState),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            )
         }
     }
 }
 
-// ------------------------------------------------------------------------ models
+// ----------------------------------------------------------------------- models
 
 @Composable
-private fun ModelsTab(controller: AppController, onLargeDownload: (CatalogModel) -> Unit) {
+private fun ModelsScreen(controller: AppController, onLargeDownload: (CatalogModel) -> Unit) {
     val s = LocalStrings.current
     var search by remember { mutableStateOf("") }
     var language by remember { mutableStateOf("") }
@@ -357,44 +473,38 @@ private fun ModelsTab(controller: AppController, onLargeDownload: (CatalogModel)
         }
     }
 
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxSize()) {
+        PreviewLine(controller)
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
         Card(
-            modifier = Modifier.weight(0.42f).fillMaxHeight(),
+            modifier = Modifier.weight(0.40f).fillMaxHeight(),
             shape = CardShape,
-            elevation = 0.dp,
-            backgroundColor = Color.White,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Line),
         ) {
-            Column(Modifier.fillMaxSize().padding(14.dp)) {
+            Column(Modifier.fillMaxSize().padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        s["models.installed"],
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text(s["models.installed"], fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        "${controller.installed.size} · ${controller.totalModelsSize()}",
-                        fontSize = 11.sp,
-                        color = Muted,
-                    )
+                    TinyChip("${controller.installed.size} · ${controller.totalModelsSize()}")
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { controller.refreshInstalled() }) {
-                        Text(s["action.refresh"], fontSize = 12.sp)
+                    IconButton(onClick = { controller.refreshInstalled() }) {
+                        Icon(Icons.Default.Tune, s["action.refresh"], Modifier.size(18.dp))
                     }
-                    TextButton(onClick = { pickZipFile()?.let { controller.importZip(it) } }) {
-                        Text(s["action.importZip"], fontSize = 12.sp)
+                    IconButton(onClick = { pickZipFile()?.let { controller.importZip(it) } }) {
+                        Icon(Icons.Default.FolderOpen, s["action.importZip"], Modifier.size(18.dp))
                     }
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 if (controller.installed.isEmpty()) {
-                    Text(s["models.none"], fontSize = 13.sp, color = Muted)
+                    EmptyHint(Icons.Default.Folder, s["models.none"])
                 } else {
                     val listState = rememberLazyListState()
                     Box(Modifier.fillMaxSize()) {
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize().padding(end = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             items(controller.installed, key = { it.name }) { model ->
                                 InstalledModelCard(controller, model)
@@ -410,68 +520,48 @@ private fun ModelsTab(controller: AppController, onLargeDownload: (CatalogModel)
         }
 
         Card(
-            modifier = Modifier.weight(0.58f).fillMaxHeight(),
+            modifier = Modifier.weight(0.60f).fillMaxHeight(),
             shape = CardShape,
-            elevation = 0.dp,
-            backgroundColor = Color.White,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Line),
         ) {
-            Column(Modifier.fillMaxSize().padding(14.dp)) {
+            Column(Modifier.fillMaxSize().padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        s["models.catalog"],
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        "${filtered.size}",
-                        fontSize = 11.sp,
-                        color = Muted,
-                    )
+                    Text(s["models.catalog"], fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    TinyChip("${filtered.size}")
                 }
-                Spacer(Modifier.height(10.dp))
-                // both controls share the same height so the row looks even
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = search,
                         onValueChange = { search = it },
-                        label = { Text(s["models.search"], fontSize = 12.sp) },
                         singleLine = true,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).height(FILTER_HEIGHT),
+                        placeholder = { Text(s["models.search"], fontSize = 13.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(18.dp)) },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f).height(FIELD_HEIGHT),
                     )
                     Spacer(Modifier.width(10.dp))
-                    FilterDropdown(
+                    UiDropdown(
                         selected = if (language.isBlank()) s["models.allLanguages"] else language,
                         options = listOf(s["models.allLanguages"] to "") +
                                 ModelCatalog.languages.map { it to it },
-                        modifier = Modifier.width(190.dp).height(FILTER_HEIGHT),
+                        modifier = Modifier.width(200.dp).height(FIELD_HEIGHT),
                     ) { language = it }
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(s["models.hint"], fontSize = 11.sp, color = Muted)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 val listState = rememberLazyListState()
                 Box(Modifier.fillMaxSize()) {
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize().padding(end = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(filtered, key = { it.id }) { model ->
-                            AvailableModelRow(
-                                model = model,
-                                installed = model.id in installedNames,
-                                onDownload = {
-                                    if (model.isHeavy) {
-                                        onLargeDownload(model)
-                                    } else {
-                                        controller.downloadModel(model)
-                                    }
-                                },
-                            )
+                            AvailableModelRow(model, model.id in installedNames) {
+                                if (model.isHeavy) onLargeDownload(model) else controller.downloadModel(model)
+                            }
                         }
                     }
                     VerticalScrollbar(
@@ -481,13 +571,46 @@ private fun ModelsTab(controller: AppController, onLargeDownload: (CatalogModel)
                 }
             }
         }
+        }
     }
 }
 
-private val FILTER_HEIGHT = 54.dp
+private val FIELD_HEIGHT = 56.dp
 
 @Composable
-private fun FilterDropdown(
+private fun TinyChip(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = CircleShape,
+    ) {
+        Text(
+            text,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+        )
+    }
+}
+
+@Composable
+private fun EmptyHint(icon: ImageVector, text: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 26.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.outline)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 10.dp),
+        )
+    }
+}
+
+@Composable
+private fun UiDropdown(
     selected: String,
     options: List<Pair<String, String>>,
     modifier: Modifier = Modifier,
@@ -497,25 +620,23 @@ private fun FilterDropdown(
     Box(modifier) {
         OutlinedButton(
             onClick = { expanded = true },
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(selected, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                Text("▾", fontSize = 12.sp, color = Muted)
+                Icon(Icons.Default.ExpandMore, null, Modifier.size(16.dp))
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (label, value) ->
-                DropdownMenuItem(onClick = {
-                    expanded = false
-                    onSelect(value)
-                }) {
-                    Text(label, fontSize = 13.sp)
-                }
+                DropdownMenuItem(
+                    text = { Text(label, fontSize = 13.sp) },
+                    onClick = {
+                        expanded = false
+                        onSelect(value)
+                    },
+                )
             }
         }
     }
@@ -526,67 +647,49 @@ private fun InstalledModelCard(controller: AppController, model: InstalledModel)
     val s = LocalStrings.current
     var confirmDelete by remember { mutableStateOf(false) }
     val active = controller.config.model == model.name
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(
-                if (active) Primary.copy(alpha = 0.06f) else Color(0xFFFAFBFD),
-                RoundedCornerShape(10.dp),
-            )
-            .border(
-                1.dp,
-                if (active) Primary.copy(alpha = 0.45f) else CardBorder,
-                RoundedCornerShape(10.dp),
-            )
-            .padding(10.dp)
+    Surface(
+        color = if (active) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f) else Line),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    model.name,
-                    fontSize = 13.sp,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LtrText(
-                        "${model.lang}  ·  ${model.sizeText}",
-                        fontSize = 11.sp,
-                        color = Muted,
-                    )
-                    if (active) {
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            s["models.activeTag"],
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    LtrText(model.name, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        LtrText(
+                            "${model.lang}  ·  ${model.sizeText}",
                             fontSize = 11.sp,
-                            color = Primary,
-                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (active) {
+                            Spacer(Modifier.width(8.dp))
+                            TinyChip(s["models.activeTag"])
+                        }
                     }
                 }
             }
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 4.dp),
-        ) {
-            TextButton(
-                onClick = { controller.setActiveModel(model.name) },
-                enabled = !active,
-            ) { Text(s["action.use"], fontSize = 12.sp) }
-            TextButton(onClick = { controller.exportZip(model) }) {
-                Text(s["action.exportZip"], fontSize = 12.sp)
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { confirmDelete = true }) {
-                Text(s["action.delete"], fontSize = 12.sp, color = MaterialTheme.colors.error)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                TextButton(onClick = { controller.setActiveModel(model.name) }, enabled = !active) {
+                    Text(s["action.use"], fontSize = 12.sp)
+                }
+                TextButton(onClick = { controller.exportZip(model) }) {
+                    Text(s["action.exportZip"], fontSize = 12.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { confirmDelete = true }) {
+                    Icon(Icons.Default.Delete, s["action.delete"], Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text(s["models.deleteTitle"]) },
-            text = { Text(s.f("models.deleteText", model.name, model.sizeText)) },
+            title = { Text(s["models.deleteTitle"], fontSize = 17.sp, fontWeight = FontWeight.Bold) },
+            text = { Text(s.f("models.deleteText", model.name, model.sizeText), fontSize = 13.sp) },
             confirmButton = {
                 Button(onClick = {
                     confirmDelete = false
@@ -603,37 +706,241 @@ private fun InstalledModelCard(controller: AppController, model: InstalledModel)
 @Composable
 private fun AvailableModelRow(model: CatalogModel, installed: Boolean, onDownload: () -> Unit) {
     val s = LocalStrings.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .background(Color(0xFFFAFBFD), RoundedCornerShape(8.dp))
-            .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, Line),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.weight(1f)) {
-            LtrText(model.id, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-            LtrText(
-                "${model.sizeText}  ·  ${s["tier." + model.tier.id]}  ·  ${model.license}",
-                fontSize = 11.sp,
-                color = Muted,
-            )
-            LtrText(model.notes, fontSize = 11.sp, color = Muted.copy(alpha = 0.85f))
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                LtrText(model.id, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                LtrText(
+                    "${model.sizeText}  ·  ${s["tier." + model.tier.id]}  ·  ${model.license}",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LtrText(model.notes, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f))
+            }
+            Spacer(Modifier.width(10.dp))
+            if (installed) {
+                TinyChip(s["models.installedTag"])
+            } else {
+                FilledTonalButton(
+                    onClick = onDownload,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.height(34.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Icon(Icons.Default.Download, null, Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(s["action.download"], fontSize = 12.sp)
+                }
+            }
         }
-        if (installed) {
-            Text(
-                s["models.installedTag"],
-                fontSize = 11.sp,
-                color = Primary,
-                modifier = Modifier.padding(horizontal = 10.dp),
-            )
-        } else {
-            OutlinedButton(
-                onClick = onDownload,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.height(32.dp),
-            ) { Text(s["action.download"], fontSize = 12.sp) }
+    }
+}
+
+// ------------------------------------------------------------------ transcribe
+
+@Composable
+private fun TranscribeScreen(controller: AppController) {
+    val s = LocalStrings.current
+    val file = controller.transcriptionFile
+    val transcript = controller.transcript
+    val running = controller.transcriptionRunning
+    val progress = controller.transcriptionProgress
+
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Card(
+            shape = CardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Line),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.LibraryMusic,
+                            null,
+                            Modifier.padding(10.dp).size(22.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        if (file == null) {
+                            Text(s["transcribe.noFile"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            LtrText(file.name, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            LtrText(
+                                s.f(
+                                    "transcribe.fileInfo",
+                                    formatBytes(file.length()),
+                                    file.extension.uppercase(),
+                                    formatTimecode(AudioFileReader.durationSeconds(file)),
+                                ),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TinyChip(s.f("transcribe.model", controller.config.model.ifBlank { "—" }))
+                            if (controller.transcriptionUsesFfmpeg) {
+                                Spacer(Modifier.width(6.dp))
+                                TinyChip("ffmpeg")
+                            }
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    OutlinedButton(
+                        onClick = { pickAudioFile()?.let { controller.chooseTranscriptionFile(it) } },
+                        enabled = !running,
+                        shape = RoundedCornerShape(50),
+                    ) {
+                        Icon(Icons.Default.FolderOpen, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(s["transcribe.choose"], fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    if (running) {
+                        FilledTonalButton(onClick = { controller.cancelTranscription() }, shape = RoundedCornerShape(50)) {
+                            Icon(Icons.Default.Stop, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(s["transcribe.cancel"], fontSize = 12.sp)
+                        }
+                    } else {
+                        Button(
+                            onClick = { controller.startTranscription() },
+                            enabled = file != null,
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Text(s["transcribe.start"], fontSize = 12.sp)
+                        }
+                    }
+                }
+                controller.transcriptionError?.let { message ->
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ErrorOutline, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.width(8.dp))
+                            Text(message, fontSize = 12.sp, color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                    }
+                }
+                if (running) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (progress == null) {
+                            LinearProgressIndicator(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+                        } else {
+                            LinearProgressIndicator(
+                                progress = progress,
+                                modifier = Modifier.weight(1f),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            if (progress == null) s["transcribe.loadingModel"]
+                            else s.f("transcribe.working", (progress * 100).toInt()),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        Card(
+            shape = CardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Line),
+            modifier = Modifier.fillMaxWidth().weight(1f),
+        ) {
+            Column(Modifier.fillMaxSize().padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(s["transcribe.result"], fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    transcript?.let {
+                        TinyChip(
+                            s.f(
+                                "transcribe.resultInfo",
+                                it.lines.size,
+                                it.wordCount,
+                                formatTimecode(it.durationSeconds),
+                            )
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(
+                        onClick = { controller.copyTranscript(withTimecodes = false) },
+                        enabled = transcript != null,
+                    ) {
+                        Icon(Icons.Default.ContentCopy, null, Modifier.size(15.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(s["transcribe.copy"], fontSize = 12.sp)
+                    }
+                    TextButton(
+                        onClick = { controller.copyTranscript(withTimecodes = true) },
+                        enabled = transcript != null,
+                    ) { Text(s["transcribe.copyTimed"], fontSize = 12.sp) }
+                    TextButton(
+                        onClick = {
+                            saveTextFile(controller.suggestedTranscriptName())?.let { controller.saveTranscript(it) }
+                        },
+                        enabled = transcript != null,
+                    ) { Text(s["transcribe.save"], fontSize = 12.sp) }
+                }
+                Spacer(Modifier.height(8.dp))
+                if (transcript == null) {
+                    EmptyHint(Icons.Default.LibraryMusic, s["transcribe.empty"])
+                } else {
+                    val listState = rememberLazyListState()
+                    Box(Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize().padding(end = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            items(transcript.lines) { line ->
+                                Row(Modifier.fillMaxWidth()) {
+                                    LtrText(
+                                        formatTimecode(line.startSeconds),
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontFamily = FontFamily.Monospace,
+                                        modifier = Modifier.width(64.dp),
+                                    )
+                                    SelectionContainer {
+                                        Text(line.text, fontSize = 13.sp, color = Ink)
+                                    }
+                                }
+                            }
+                        }
+                        VerticalScrollbar(
+                            adapter = rememberScrollbarAdapter(listState),
+                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -641,7 +948,7 @@ private fun AvailableModelRow(model: CatalogModel, installed: Boolean, onDownloa
 // ---------------------------------------------------------------------- settings
 
 @Composable
-private fun SettingsTab(controller: AppController, onPickFolder: (File) -> Unit) {
+private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Unit) {
     val s = LocalStrings.current
     val config = controller.config
     var hotkey by remember(config.hotkey) { mutableStateOf(config.hotkey) }
@@ -654,12 +961,8 @@ private fun SettingsTab(controller: AppController, onPickFolder: (File) -> Unit)
     var capitalize by remember(config.capitalize) { mutableStateOf(config.capitalize) }
     var keepModel by remember(config.keepModelLoaded) { mutableStateOf(config.keepModelLoaded) }
     var showPreview by remember(config.showPreview) { mutableStateOf(config.showPreview) }
-    var copyToClipboard by remember(config.copyToClipboard) {
-        mutableStateOf(config.copyToClipboard)
-    }
-    var startMinimized by remember(config.startMinimized) {
-        mutableStateOf(config.startMinimized)
-    }
+    var copyToClipboard by remember(config.copyToClipboard) { mutableStateOf(config.copyToClipboard) }
+    var startMinimized by remember(config.startMinimized) { mutableStateOf(config.startMinimized) }
     var error by remember { mutableStateOf<String?>(null) }
     val devices = remember { RecognitionEngine.inputDevices().map { it.name } }
 
@@ -687,101 +990,83 @@ private fun SettingsTab(controller: AppController, onPickFolder: (File) -> Unit)
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SectionCard(s["settings.typing"]) {
-            SettingRow(s["settings.hotkey"]) {
+            FieldRow(s["settings.hotkey"]) {
                 OutlinedTextField(
                     value = hotkey,
                     onValueChange = { hotkey = it },
                     singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.width(210.dp).height(FILTER_HEIGHT),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.width(220.dp).height(FIELD_HEIGHT),
                 )
                 Spacer(Modifier.width(10.dp))
-                Button(onClick = { save() }) { Text(s["action.saveHotkey"], fontSize = 12.sp) }
+                Button(onClick = { save() }, shape = RoundedCornerShape(50)) {
+                    Text(s["action.saveHotkey"], fontSize = 12.sp)
+                }
                 Spacer(Modifier.width(10.dp))
-                LtrText(s["settings.hotkeyHint"], fontSize = 11.sp, color = Muted)
+                LtrText(s["settings.hotkeyHint"], fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            SettingRow(s["settings.microphone"]) {
-                FilterDropdown(
-                    selected = device,
-                    options = devices.map { it to it },
-                    modifier = Modifier.width(320.dp).height(FILTER_HEIGHT),
-                ) {
+            FieldRow(s["settings.microphone"]) {
+                UiDropdown(device, devices.map { it to it }, Modifier.width(330.dp).height(FIELD_HEIGHT)) {
                     device = it
                     save(validateHotkey = false)
                 }
             }
-            SettingRow(s["settings.typingMethod"]) {
-                FilterDropdown(
-                    selected = backend,
-                    options = Typers.available().map { it to it },
-                    modifier = Modifier.width(190.dp).height(FILTER_HEIGHT),
-                ) {
+            FieldRow(s["settings.typingMethod"]) {
+                UiDropdown(backend, Typers.available().map { it to it }, Modifier.width(200.dp).height(FIELD_HEIGHT)) {
                     backend = it
                     save(validateHotkey = false)
                 }
-                Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { controller.testTyping() }) {
+                Spacer(Modifier.width(10.dp))
+                OutlinedButton(onClick = { controller.testTyping() }, shape = RoundedCornerShape(50)) {
                     Text(s["action.testTyping"], fontSize = 12.sp)
                 }
             }
         }
 
         SectionCard(s["settings.behaviour"]) {
-            CheckRow(s["settings.typeLive"], livePartial) {
-                livePartial = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.trailingSpace"], trailingSpace) {
-                trailingSpace = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.capitalize"], capitalize) {
-                capitalize = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.keepModel"], keepModel) {
-                keepModel = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.showPreview"], showPreview) {
-                showPreview = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.copyPhrases"], copyToClipboard) {
-                copyToClipboard = it
-                save(validateHotkey = false)
-            }
-            CheckRow(s["settings.startMinimized"], startMinimized) {
-                startMinimized = it
-                save(validateHotkey = false)
-            }
+            ToggleRow(s["settings.typeLive"], livePartial) { livePartial = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.trailingSpace"], trailingSpace) { trailingSpace = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.capitalize"], capitalize) { capitalize = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.keepModel"], keepModel) { keepModel = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.showPreview"], showPreview) { showPreview = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.copyPhrases"], copyToClipboard) { copyToClipboard = it; save(validateHotkey = false) }
+            ToggleRow(s["settings.startMinimized"], startMinimized) { startMinimized = it; save(validateHotkey = false) }
         }
 
         SectionCard(s["settings.storage"]) {
-            Text(s["settings.storageText"], fontSize = 12.sp, color = Muted)
-            Spacer(Modifier.height(6.dp))
-            SelectionContainer {
-                Text(
-                    controller.modelsFolder().absolutePath,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = Color(0xFF33475B),
-                )
+            Text(s["settings.storageText"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    SelectionContainer {
+                        LtrText(
+                            controller.modelsFolder().absolutePath,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                    Text(
+                        s.f("settings.freeSpace", formatSizeMb(AppPaths.freeSpaceMb())),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            Text(
-                s.f("settings.freeSpace", formatSizeMb(AppPaths.freeSpaceMb())),
-                fontSize = 11.sp,
-                color = Muted,
-            )
-            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = { pickDirectory()?.let(onPickFolder) }) {
+            Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = { pickDirectory()?.let(onPickFolder) }, shape = RoundedCornerShape(50)) {
                     Text(s["action.changeFolder"], fontSize = 12.sp)
                 }
                 Spacer(Modifier.width(8.dp))
-                TextButton(onClick = { openFolder(controller.modelsFolder()) }) {
+                OutlinedButton(onClick = { openFolder(controller.modelsFolder()) }, shape = RoundedCornerShape(50)) {
+                    Icon(Icons.Default.FolderOpen, null, Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(s["action.openFolder"], fontSize = 12.sp)
                 }
                 Spacer(Modifier.width(8.dp))
@@ -789,42 +1074,42 @@ private fun SettingsTab(controller: AppController, onPickFolder: (File) -> Unit)
                     Text(s["settings.unload"], fontSize = 12.sp)
                 }
             }
-            Divider(Modifier.padding(vertical = 8.dp))
-            Text(s.f("settings.settingsFile", AppPaths.configFile().absolutePath), fontSize = 11.sp, color = Muted)
+            Spacer(Modifier.height(6.dp))
+            LtrText(
+                s.f("settings.settingsFile", AppPaths.configFile().absolutePath),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         SectionCard(s["settings.requirements"]) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { controller.refreshDiagnostics() }) {
-                    Text(s["action.checkAgain"], fontSize = 12.sp)
-                }
-                TextButton(onClick = { controller.openDiagnostics() }) {
-                    Text(s["action.showDetails"], fontSize = 12.sp)
-                }
-                Text(s["settings.immediate"], fontSize = 11.sp, color = Muted)
+                TextButton(onClick = { controller.refreshDiagnostics() }) { Text(s["action.checkAgain"], fontSize = 12.sp) }
+                TextButton(onClick = { controller.openDiagnostics() }) { Text(s["action.showDetails"], fontSize = 12.sp) }
             }
-            controller.diagnostics.forEach { check ->
-                Row(Modifier.padding(vertical = 1.dp)) {
-                    Text(
-                        text = when (check.state) {
-                            CheckState.OK -> "✔"
-                            CheckState.WARNING -> "⚠"
-                            CheckState.ERROR -> "✖"
-                        },
-                        fontSize = 12.sp,
-                        color = when (check.state) {
-                            CheckState.OK -> OkGreen
-                            CheckState.WARNING -> WarnAmber
-                            CheckState.ERROR -> MaterialTheme.colors.error
-                        },
-                        modifier = Modifier.width(20.dp),
-                    )
-                    Text("${check.title}: ${check.detail}", fontSize = 12.sp)
-                }
-            }
+            controller.diagnostics.forEach { check -> CheckRowLine(check) }
         }
-        error?.let { Text(it, color = MaterialTheme.colors.error, fontSize = 13.sp) }
-        Spacer(Modifier.height(8.dp))
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp) }
+        Spacer(Modifier.height(6.dp))
+    }
+}
+
+@Composable
+private fun CheckRowLine(check: DiagnosticCheck) {
+    Row(Modifier.padding(vertical = 2.dp)) {
+        val (icon, color) = when (check.state) {
+            CheckState.OK -> Icons.Default.Folder to OkGreen
+            CheckState.WARNING -> Icons.Default.Warning to WarnAmber
+            CheckState.ERROR -> Icons.Default.ErrorOutline to MaterialTheme.colorScheme.error
+        }
+        Icon(
+            if (check.state == CheckState.OK) Icons.Default.Info else icon,
+            null,
+            Modifier.size(15.dp),
+            tint = color,
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("${check.title}: ${check.detail}", fontSize = 12.sp)
     }
 }
 
@@ -832,37 +1117,37 @@ private fun SettingsTab(controller: AppController, onPickFolder: (File) -> Unit)
 private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
         shape = CardShape,
-        elevation = 0.dp,
-        backgroundColor = Color.White,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, Line),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E2433))
-            Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxWidth().padding(18.dp)) {
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
             content()
         }
     }
 }
 
 @Composable
-private fun SettingRow(label: String, content: @Composable () -> Unit) {
+private fun FieldRow(label: String, content: @Composable () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, fontSize = 13.sp, modifier = Modifier.width(150.dp), color = Color(0xFF3A4050))
+        Text(label, fontSize = 13.sp, modifier = Modifier.width(150.dp))
         content()
     }
 }
 
 @Composable
-private fun CheckRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
     ) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Spacer(Modifier.width(4.dp))
+        Switch(checked = checked, onCheckedChange = onChange)
+        Spacer(Modifier.width(12.dp))
         Text(label, fontSize = 13.sp)
     }
 }
@@ -870,44 +1155,44 @@ private fun CheckRow(label: String, checked: Boolean, onChange: (Boolean) -> Uni
 // ------------------------------------------------------------------------- about
 
 @Composable
-private fun AboutTab(controller: AppController) {
+private fun AboutScreen(controller: AppController) {
     val s = LocalStrings.current
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SectionCard(s["about.title"]) {
-            Image(
-                painter = painterResource("icons/saytypist.png"),
-                contentDescription = null,
-                modifier = Modifier.width(190.dp).height(120.dp),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                s.f("about.version", AppInfo.VERSION),
-                fontSize = 12.sp,
-                color = Muted,
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(s["about.description"], fontSize = 13.sp, lineHeight = 20.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource("icons/saytypist.png"),
+                    contentDescription = null,
+                    modifier = Modifier.width(180.dp).height(110.dp),
+                )
+                Spacer(Modifier.width(16.dp))
+                Column {
+                    Text(s.f("about.version", Version.NAME), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(6.dp))
+                    Text(s["about.description"], fontSize = 13.sp, lineHeight = 20.sp)
+                }
+            }
             Spacer(Modifier.height(10.dp))
             Text(s["about.howItWorks"], fontSize = 13.sp, lineHeight = 20.sp)
         }
         SectionCard(s["about.developer"]) {
             Text(AppInfo.MAINTAINER, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             if (AppInfo.MAINTAINER_URL.isNotBlank()) {
-                Text(AppInfo.MAINTAINER_URL, fontSize = 12.sp, color = Primary)
+                LtrText(AppInfo.MAINTAINER_URL, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.height(6.dp))
-            Text(s["about.upstream"], fontSize = 12.sp, color = Muted)
-            Text(s.f("about.license", AppInfo.LICENSE), fontSize = 12.sp, color = Muted)
+            Text(s["about.upstream"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(s.f("about.license", AppInfo.LICENSE), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         SectionCard(s["about.credits"]) {
             Text(s["about.creditsText"], fontSize = 12.sp, lineHeight = 18.sp)
         }
         SectionCard(s["about.data"]) {
             SelectionContainer {
-                Text(
+                LtrText(
                     s.f(
                         "about.dataText",
                         controller.modelsFolder().absolutePath,
@@ -927,7 +1212,7 @@ private fun AboutTab(controller: AppController) {
             LinkRow(s["about.linkModels"], AppInfo.MODELS_SITE)
             LinkRow(s["about.linkLicense"], AppInfo.LICENSE_URL)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
     }
 }
 
@@ -935,9 +1220,7 @@ private fun AboutTab(controller: AppController) {
 private fun LinkRow(label: String, url: String) {
     Row(Modifier.padding(vertical = 2.dp)) {
         Text("$label: ", fontSize = 12.sp)
-        SelectionContainer {
-            Text(url, fontSize = 12.sp, color = Primary)
-        }
+        SelectionContainer { LtrText(url, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary) }
     }
 }
 
@@ -949,7 +1232,7 @@ private fun MoveModelsDialog(controller: AppController, folder: File, onDismiss:
     val models = controller.installed
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(s["confirm.moveTitle"]) },
+        title = { Text(s["confirm.moveTitle"], fontSize = 17.sp, fontWeight = FontWeight.Bold) },
         text = {
             Text(
                 s.f(
@@ -980,11 +1263,7 @@ private fun MoveModelsDialog(controller: AppController, folder: File, onDismiss:
 }
 
 @Composable
-private fun DownloadConfirmDialog(
-    model: CatalogModel,
-    controller: AppController,
-    onDismiss: () -> Unit,
-) {
+private fun DownloadConfirmDialog(model: CatalogModel, controller: AppController, onDismiss: () -> Unit) {
     val s = LocalStrings.current
     val freeMb = remember(model) { AppPaths.freeSpaceMb() }
     val requiredMb = controller.requiredSpaceMb(model)
@@ -992,38 +1271,28 @@ private fun DownloadConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(if (model.isHeavy) s["confirm.titleHeavy"] else s["confirm.title"])
+            Text(
+                if (model.isHeavy) s["confirm.titleHeavy"] else s["confirm.title"],
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+            )
         },
         text = {
             Column {
-                Text(model.id, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                LtrText(model.id, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    s.f("confirm.size", model.sizeText, s["tier." + model.tier.id]),
-                    fontSize = 13.sp,
-                )
+                Text(s.f("confirm.size", model.sizeText, s["tier." + model.tier.id]), fontSize = 13.sp)
                 Text(s.f("confirm.ram", model.tier.ramMb), fontSize = 13.sp)
                 Text(model.notes, fontSize = 13.sp)
-                Text(s.f("confirm.license", model.license), fontSize = 12.sp, color = Muted)
+                Text(s.f("confirm.license", model.license), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
                 if (enough) {
-                    Text(
-                        s.f(
-                            "confirm.spaceOk",
-                            formatSizeMb(freeMb),
-                            formatSizeMb(requiredMb),
-                        ),
-                        fontSize = 12.sp,
-                    )
+                    Text(s.f("confirm.spaceOk", formatSizeMb(freeMb), formatSizeMb(requiredMb)), fontSize = 12.sp)
                 } else {
                     Text(
-                        s.f(
-                            "confirm.spaceNotEnough",
-                            formatSizeMb(freeMb),
-                            formatSizeMb(requiredMb),
-                        ),
+                        s.f("confirm.spaceNotEnough", formatSizeMb(freeMb), formatSizeMb(requiredMb)),
                         fontSize = 12.sp,
-                        color = MaterialTheme.colors.error,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -1037,9 +1306,7 @@ private fun DownloadConfirmDialog(
                 },
             ) { Text(s["action.download"]) }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(s["action.cancel"]) }
-        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(s["action.cancel"]) } },
     )
 }
 
@@ -1050,56 +1317,55 @@ private fun BoxScope.RequirementsPanel(controller: AppController) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0x88000000))
+            .background(Color(0x99000000))
             .clickable { controller.closeDiagnostics() }
     )
     Card(
-        modifier = Modifier
-            .align(Alignment.Center)
-            .fillMaxWidth(0.9f)
-            .heightIn(max = 620.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = 12.dp,
+        modifier = Modifier.align(Alignment.Center).fillMaxWidth(0.86f).heightIn(max = 640.dp),
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 14.dp),
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Text(s["diag.title"], fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text(s["diag.subtitle"], fontSize = 12.sp, color = Muted, modifier = Modifier.padding(top = 2.dp))
-            Divider(Modifier.padding(vertical = 10.dp))
+        Column(Modifier.padding(22.dp)) {
+            Text(s["diag.title"], fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            Text(
+                s["diag.subtitle"],
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Spacer(Modifier.height(12.dp))
             val listState = rememberLazyListState()
             Box(Modifier.weight(1f, fill = false).heightIn(max = 430.dp)) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize().padding(end = 12.dp),
-                ) {
+                LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(end = 12.dp)) {
                     items(checks) { check ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                            Text(
-                                text = when (check.state) {
-                                    CheckState.OK -> "✔"
-                                    CheckState.WARNING -> "⚠"
-                                    CheckState.ERROR -> "✖"
-                                },
-                                fontSize = 15.sp,
-                                color = when (check.state) {
-                                    CheckState.OK -> OkGreen
-                                    CheckState.WARNING -> WarnAmber
-                                    CheckState.ERROR -> MaterialTheme.colors.error
-                                },
-                                modifier = Modifier.width(24.dp),
-                            )
+                        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
+                            val (icon, color) = when (check.state) {
+                                CheckState.OK -> Icons.Default.Info to OkGreen
+                                CheckState.WARNING -> Icons.Default.Warning to WarnAmber
+                                CheckState.ERROR -> Icons.Default.ErrorOutline to MaterialTheme.colorScheme.error
+                            }
+                            Icon(icon, null, Modifier.size(18.dp), tint = color)
+                            Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(check.title, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 Text(check.detail, fontSize = 12.sp)
                                 check.hint?.let { hint ->
-                                    Spacer(Modifier.height(4.dp))
-                                    SelectionContainer {
-                                        Text(
-                                            hint,
-                                            fontSize = 12.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = Color(0xFF33475B),
-                                            lineHeight = 17.sp,
-                                        )
+                                    Spacer(Modifier.height(5.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+                                        shape = RoundedCornerShape(10.dp),
+                                    ) {
+                                        SelectionContainer {
+                                            LtrText(
+                                                hint,
+                                                modifier = Modifier.padding(10.dp),
+                                                fontSize = 12.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = Color(0xFF33475B),
+                                                lineHeight = 17.sp,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1111,13 +1377,8 @@ private fun BoxScope.RequirementsPanel(controller: AppController) {
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 )
             }
-            Row(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = { controller.refreshDiagnostics() }) {
-                    Text(s["action.checkAgain"])
-                }
+            Row(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { controller.refreshDiagnostics() }) { Text(s["action.checkAgain"]) }
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = { controller.closeDiagnostics() }) { Text(s["action.close"]) }
             }
@@ -1125,89 +1386,48 @@ private fun BoxScope.RequirementsPanel(controller: AppController) {
     }
 }
 
-// ------------------------------------------------------------- progress and log
+// ------------------------------------------------------------------------ preview
+// (the live preview lives in the top bar of the Models screen)
 
 @Composable
-private fun DownloadBar(controller: AppController) {
+private fun PreviewLine(controller: AppController) {
     val s = LocalStrings.current
-    if (!controller.busy) {
-        Spacer(Modifier.height(8.dp))
-        return
-    }
+    if (!controller.config.showPreview) return
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
     ) {
-        val fraction = controller.downloadFraction
-        if (fraction == null) {
-            CircularProgressIndicator(Modifier.width(16.dp).height(16.dp), strokeWidth = 2.dp)
-        } else {
-            LinearProgressIndicator(progress = fraction, modifier = Modifier.weight(1f))
-        }
-        Text(controller.downloadLabel, fontSize = 12.sp, color = Muted)
-        TextButton(onClick = { controller.cancelDownload() }) {
-            Text(s["action.cancel"], fontSize = 12.sp)
-        }
-    }
-}
-
-@Composable
-private fun LogPane(controller: AppController) {
-    val s = LocalStrings.current
-    if (!controller.config.logVisible) {
-        val last = controller.logLines.lastOrNull() ?: return
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        ) {
-            Text(s["log.lastLabel"], fontSize = 11.sp, color = Muted)
-            Spacer(Modifier.width(8.dp))
-            LtrText(
-                last,
-                modifier = Modifier.weight(1f),
-                fontSize = 11.sp,
-                color = Muted,
-            )
-        }
-        return
-    }
-    val listState = rememberLazyListState()
-    LaunchedEffect(controller.logLines.size) {
-        if (controller.logLines.isNotEmpty()) {
-            listState.animateScrollToItem(controller.logLines.size - 1)
-        }
-    }
-    Spacer(Modifier.height(10.dp))
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .background(Color(0xFFF8F9FC), RoundedCornerShape(10.dp))
-            .border(1.dp, CardBorder, RoundedCornerShape(10.dp))
-    ) {
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(10.dp)) {
-            items(controller.logLines) { line ->
-                LtrText(line, fontSize = 11.sp, color = Color(0xFF333333))
-            }
-        }
-        VerticalScrollbar(
-            adapter = rememberScrollbarAdapter(listState),
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+        Text(
+            controller.preview.ifBlank { s["preview.hint"] },
+            color = if (controller.preview.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else OkGreen,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f),
         )
+        TextButton(
+            onClick = { controller.copyLastPhrase() },
+            enabled = controller.lastPhrase.isNotBlank() || controller.preview.isNotBlank(),
+        ) { Text(s["action.copyLast"], fontSize = 12.sp) }
     }
 }
 
 // ------------------------------------------------------------------------ helpers
 
-private fun pickZipFile(): File? {
+private fun pickZipFile(): File? = pickFile(
+    title = "Import a Vosk model (.zip)",
+    filter = { name -> name.endsWith(".zip", ignoreCase = true) },
+)
+
+private fun pickAudioFile(): File? = pickFile(
+    title = "Choose an audio file",
+    filter = { name ->
+        AudioFileReader.supportedExtensions.any { name.endsWith(".$it", ignoreCase = true) }
+    },
+)
+
+private fun pickFile(title: String, filter: (String) -> Boolean): File? {
     return try {
-        val dialog = java.awt.FileDialog(
-            null as java.awt.Frame?,
-            "Import a Vosk model (.zip)",
-            java.awt.FileDialog.LOAD,
-        )
-        dialog.setFilenameFilter { _, name -> name.endsWith(".zip", ignoreCase = true) }
+        val dialog = java.awt.FileDialog(null as java.awt.Frame?, title, java.awt.FileDialog.LOAD)
+        dialog.setFilenameFilter { _, name -> filter(name) }
         dialog.isVisible = true
         val directory = dialog.directory ?: return null
         val file = dialog.file ?: return null
@@ -1218,17 +1438,27 @@ private fun pickZipFile(): File? {
     }
 }
 
+private fun saveTextFile(suggestedName: String): File? {
+    return try {
+        val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Save transcript", java.awt.FileDialog.SAVE)
+        dialog.file = suggestedName
+        dialog.isVisible = true
+        val directory = dialog.directory ?: return null
+        val file = dialog.file ?: return null
+        File(directory, file)
+    } catch (e: Exception) {
+        System.err.println("Save dialog failed: ${e.message}")
+        null
+    }
+}
+
 private fun pickDirectory(): File? {
     return try {
         val chooser = JFileChooser(AppPaths.modelsDir())
         chooser.dialogTitle = "Choose the models folder"
         chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
         chooser.isAcceptAllFileFilterUsed = false
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-            chooser.selectedFile
-        } else {
-            null
-        }
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
     } catch (e: Exception) {
         System.err.println("Folder picker failed: ${e.message}")
         null
@@ -1237,9 +1467,7 @@ private fun pickDirectory(): File? {
 
 private fun openFolder(folder: File) {
     try {
-        if (Desktop.isDesktopSupported()) {
-            Desktop.getDesktop().open(folder)
-        }
+        if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(folder)
     } catch (e: Exception) {
         System.err.println("Could not open ${folder.absolutePath}: ${e.message}")
     }

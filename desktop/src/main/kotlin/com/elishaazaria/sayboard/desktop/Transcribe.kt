@@ -51,8 +51,15 @@ object AudioFileReader {
     const val TARGET_RATE = 16000f
     private val TARGET_FORMAT = AudioFormat(TARGET_RATE, 16, 1, true, false)
 
-    val supportedExtensions: List<String> =
-        listOf("wav", "wave", "mp3", "ogg", "oga", "opus", "flac", "m4a", "aac", "wma", "webm", "mp4")
+    val supportedExtensions: List<String> = listOf(
+        // decoded by Java itself
+        "wav", "wave",
+        // decoded by ffmpeg (it sniffs the container, the extension only has to
+        // let the user pick the file)
+        "mp3", "mp2", "ogg", "oga", "ogx", "ogv", "ogm", "opus", "spx",
+        "flac", "m4a", "m4b", "aac", "wma", "webm", "mp4", "mka",
+        "aiff", "aif", "caf", "amr", "3gp", "ac3",
+    )
 
     fun isWav(file: File): Boolean = file.extension.lowercase() in setOf("wav", "wave")
 
@@ -120,8 +127,10 @@ object AudioFileReader {
             )
         }
         val process = ProcessBuilder(
+            // -vn: containers such as .ogx/.ogv may carry a video track too,
+            // only the first audio stream is wanted
             "ffmpeg", "-nostdin", "-loglevel", "error", "-i", file.absolutePath,
-            "-ar", "16000", "-ac", "1", "-f", "s16le", "-"
+            "-vn", "-ar", "16000", "-ac", "1", "-f", "s16le", "-"
         ).redirectErrorStream(false).start()
         val input = process.inputStream
         return object : InputStream() {

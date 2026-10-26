@@ -44,6 +44,19 @@ class TranscriptionIntegrationTest {
     }
 
     @Test
+    fun `ogg based containers are accepted`() {
+        listOf("ogx", "ogv", "ogg", "oga", "opus", "spx").forEach { extension ->
+            assertTrue(
+                AudioFileReader.supportedExtensions.contains(extension),
+                "extension .$extension is missing",
+            )
+        }
+        // WAV never needs ffmpeg, everything else does
+        assertTrue(AudioFileReader.isWav(java.io.File("recording.wav")))
+        assertTrue(!AudioFileReader.isWav(java.io.File("recording.ogx")))
+    }
+
+    @Test
     fun `compressed files need ffmpeg which is detected`() {
         val mp3 = File(System.getenv("SAYTYPIST_TEST_AUDIO") ?: return)
         if (!mp3.isFile) return

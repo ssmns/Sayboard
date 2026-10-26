@@ -1419,9 +1419,9 @@ private fun pickZipFile(): File? = pickFile(
 
 private fun pickAudioFile(): File? = pickFile(
     title = "Choose an audio file",
-    filter = { name ->
-        AudioFileReader.supportedExtensions.any { name.endsWith(".$it", ignoreCase = true) }
-    },
+    // show everything: ffmpeg reads the container itself, and some recorders use
+    // extensions that are not in the list (e.g. .ogx)
+    filter = { true },
 )
 
 private fun pickFile(title: String, filter: (String) -> Boolean): File? {

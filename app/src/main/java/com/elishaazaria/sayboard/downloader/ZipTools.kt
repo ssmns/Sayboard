@@ -6,6 +6,8 @@ import android.widget.Toast
 import androidx.lifecycle.Observer
 import com.elishaazaria.sayboard.Constants
 import com.elishaazaria.sayboard.Tools.deleteRecursive
+import com.elishaazaria.sayboard.share.ShareProtocol
+import org.json.JSONObject
 import java.io.*
 import java.util.Locale
 import java.util.regex.Pattern
@@ -15,6 +17,8 @@ import java.util.zip.ZipFile
 
 object ZipTools {
     private const val TAG = "ZipTools"
+    // Big models contain multi-gigabyte archives, so use a decent buffer.
+    private const val BUFFER_SIZE = 64 * 1024
     private val localePattern: Pattern =
         Pattern.compile("vosk-model-(small-)?(\\w\\w(-\\w\\w)?)-(\\w+-)?v?\\d\\.?\\d*.*")
 
@@ -51,6 +55,21 @@ object ZipTools {
         while (e.hasMoreElements()) {
             progressObserver.onChanged(i / size)
             val entry = e.nextElement() as ZipEntry
+            if (locale == Constants.UndefinedLocale &&
+                entry.name.endsWith(ShareProtocol.EXPORT_INFO_FILE)
+            ) {
+                // Models exported by Sayboard itself carry their language with them.
+                try {
+                    val text = zipfile.getInputStream(entry).bufferedReader().use { it.readText() }
+                    val tag = JSONObject(text).optString("locale")
+                    if (tag.isNotEmpty()) {
+                        locale = Locale.forLanguageTag(tag)
+                        Log.d(TAG, "Locale from metadata: ${locale.toLanguageTag()}")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not read the model metadata", e)
+                }
+            }
             if (locale == Constants.UndefinedLocale) {
                 Log.d(TAG, "Trying to detect locale: ${entry.name}")
                 val matcher = localePattern.matcher(entry.name)
@@ -127,9 +146,9 @@ object ZipTools {
                 BufferedOutputStream(
                     FileOutputStream(outputFile)
                 ).use { outputStream ->
-                    val b = ByteArray(1024)
+                    val b = ByteArray(BUFFER_SIZE)
                     var n: Int
-                    while (inputStream.read(b, 0, 1024).also { n = it } >= 0) {
+                    while (inputStream.read(b, 0, BUFFER_SIZE).also { n = it } >= 0) {
                         outputStream.write(b, 0, n)
                     }
                 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- model archives prepared for sharing (see Tools.zipModelForSharing) -->
+    <cache-path
+        name="shared_models"
+        path="shared/" />
+    <external-cache-path
+        name="shared_models_external"
+        path="shared/" />
+</paths>

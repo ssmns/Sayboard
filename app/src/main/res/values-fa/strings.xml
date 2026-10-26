@@ -2,7 +2,7 @@
 <resources>
     <string name="mic_info_preparing">آماده سازی شناساگر</string>
     <string name="logic_auto_capitalize_summary">اولین حرف را پس از یک نقطه به صورت خودکار بزرگ کنید (در صورت لزوم).</string>
-    <string name="models_import_dialog_text_after_link">- مطمئن شوید که یک مدل کوچک انتخاب کرده اید - و پس از فشار دادن \"واردکردن\"، آن را در انتخابگر پرونده انتخاب کنید</string>
+    <string name="models_import_dialog_text_after_link">- هر مدلی از Vosk کار می‌کند، حتی مدل‌های بزرگ - و پس از فشار دادن \"واردکردن\"، آن را در انتخابگر پرونده انتخاب کنید</string>
     <string name="models_import_dialog_text_before_link">دریافت دستی یک مدل زبانی از</string>
     <string name="models_download_state_unknown">ناشناس</string>
     <string name="button_cancel">لغو</string>
@@ -12,7 +12,24 @@
     <string name="models_download_state_download_finished">دریافت پایان یافت</string>
     <string name="ui_dark_theme_foreground_color_title">رنگ پیش‌زمینه</string>
     <string name="notification_download_title">در حال دریافت مدل</string>
-    <string name="models_download_dialog_title">مدل را دریافت کن</string>
+    <string name="models_download_dialog_title">دریافت مدل</string>
+    <string name="models_download_dialog_hint">مدل‌های بزرگ‌تر دقیق‌تر هستند، اما فضای ذخیره‌سازی و حافظهٔ بیشتری می‌خواهند. حجم و حافظهٔ لازم هر مدل نمایش داده می‌شود.</string>
+    <string name="models_size_tier_small">سبک</string>
+    <string name="models_size_tier_medium">متوسط</string>
+    <string name="models_size_tier_large">سنگین</string>
+    <string name="models_size_tier_huge">بسیار سنگین</string>
+    <string name="models_download_item_details">%1$s · %2$s</string>
+    <string name="models_download_item_installed">%1$s · %2$s · نصب‌شده</string>
+    <string name="models_already_installed">%1$s از قبل نصب شده است</string>
+    <string name="models_download_confirm_title">این مدل دریافت شود؟</string>
+    <string name="models_download_confirm_size">حجم دانلود: %1$s (%2$s)</string>
+    <string name="models_download_confirm_ram">حافظهٔ پیشنهادی: حدود %1$d مگابایت</string>
+    <string name="models_download_confirm_license">مجوز: %1$s</string>
+    <string name="models_download_confirm_space_ok">فضای آزاد: %1$d مگابایت — حدود %2$d مگابایت هنگام نصب استفاده می‌شود.</string>
+    <string name="models_download_confirm_space_not_enough">فضای آزاد کافی نیست: %1$d مگابایت آزاد است، حدود %2$d مگابایت لازم است.</string>
+    <string name="models_download_confirm_download">دریافت</string>
+    <string name="models_download_error">دریافت ناموفق بود: %1$s</string>
+    <string name="models_download_error_no_space">فضای کافی برای نصب این مدل وجود ندارد: حدود %1$d مگابایت لازم است، %2$d مگابایت آزاد است.</string>
     <string name="logic_keep_model_in_ram_summery">مدل را در RAM نگه می دارد تا صفحه کلید را سریعتر باز کند. رم بیشتری می گیرد.</string>
     <string name="title_ui">رابط کاربری</string>
     <string name="keyboard_height_landscape_title">ارتفاع صفحه کلید در حالت افقی (%)</string>
@@ -49,6 +66,7 @@
     <string name="dialog_add_vosk_server_cancel">لغو</string>
     <string name="models_import_dialog_title">واردکردن مدل</string>
     <string name="keyboard_not_enabled">صفحه کلید را فعال کنید</string>
+    <string name="notification_download_content_exporting">در حال آماده‌سازی فایل مدل…</string>
     <string name="notification_download_content_finished">دریافت پایان یافت!</string>
     <string name="title_models">مدل ها</string>
     <string name="keyboard_keys_right_title">کلید های راست</string>
@@ -93,4 +111,35 @@
     <string name="logic_listen_immediately_summery">پس ا‮ز آماده‌سازی شناساگر فوراً گوش دادن را شروع کن.</string>
     <string name="dialog_add_vosk_server_port">پورت</string>
     <string name="open_ime_switcher">بازکردن جا‌به‌جاگر IME</string>
+    <!--  Sharing models between devices  -->
+    <string name="share_dialog_title">اشتراک مدل‌ها</string>
+    <string name="share_server_toggle">مدل‌هایم را در این شبکه به اشتراک بگذار</string>
+    <string name="share_server_toggle_summary">گوشی‌های دیگری که sayTypist دارند و به همین وای‌فای وصل‌اند می‌توانند بدون اینترنت مدل‌ها را کپی کنند.</string>
+    <string name="share_server_address">در حال اشتراک‌گذاری روی %1$s</string>
+    <string name="share_server_error">اشتراک‌گذاری شروع نشد: %1$s</string>
+    <string name="share_find_devices">گرفتن مدل از گوشی دیگر</string>
+    <string name="share_find_devices_summary">در گوشی دیگر اشتراک‌گذاری را روشن کنید، هر دو گوشی را روی یک وای‌فای نگه دارید و بعد جست‌وجو کنید.</string>
+    <string name="share_scan">جست‌وجوی شبکه</string>
+    <string name="share_manual_address_hint">نشانی نمایش‌داده‌شده در گوشی دیگر</string>
+    <string name="share_connect">اتصال</string>
+    <string name="share_bad_address">نشانی را مثل 192.168.1.5:41234 وارد کنید</string>
+    <string name="share_scanning">در حال جست‌وجو…</string>
+    <string name="share_device_title">%1$s (%2$s)</string>
+    <string name="share_no_devices">گوشی‌ای پیدا نشد. مطمئن شوید هر دو دستگاه به یک وای‌فای وصل‌اند و در دستگاه دیگر اشتراک‌گذاری روشن است.</string>
+    <string name="share_offline_hint">هیچ شبکه‌ای در دسترس نیست؟ کنار هر مدل نصب‌شده دکمهٔ اشتراک‌گذاری را بزنید تا به‌صورت فایل zip با بلوتوث، Nearby Share یا کابل فرستاده شود. گوشی دیگر می‌تواند آن را از همین صفحه وارد کند.</string>
+    <string name="share_model_file">اشتراک فایل مدل</string>
+    <string name="share_chooser_title">اشتراک مدل</string>
+    <string name="share_export_ready">%1$s آمادهٔ اشتراک‌گذاری است</string>
+    <string name="share_export_done_title">مدل آمادهٔ اشتراک‌گذاری</string>
+    <string name="share_export_done_text">برای فرستادن %1$s به دستگاه دیگر بزنید</string>
+    <string name="share_stop">پایان اشتراک‌گذاری</string>
+    <string name="share_notification_channel_name">اشتراک‌گذاری مدل</string>
+    <string name="share_notification_channel_description">نشان می‌دهد مدل‌ها در شبکهٔ محلی به اشتراک گذاشته می‌شوند</string>
+    <string name="share_notification_title">اشتراک‌گذاری مدل‌ها در شبکه</string>
+    <string name="share_notification_text">دستگاه‌های دیگر می‌توانند مدل‌ها را از %1$s کپی کنند</string>
+    <string name="share_error_bad_url">نشانی دستگاه دیگر معتبر نیست</string>
+    <string name="share_error_already_installed">%1$s از قبل روی این دستگاه نصب شده است</string>
+    <string name="models_download_state_exporting">در حال آماده‌سازی فایل…</string>
+    <string name="button_close">بستن</string>
+
 </resources>

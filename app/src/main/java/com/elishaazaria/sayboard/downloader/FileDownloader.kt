@@ -13,6 +13,8 @@ object FileDownloader {
     const val ACTION = "action"
     const val ACTION_DOWNLOAD = "action_download"
     const val ACTION_UNZIP = "action_unzip"
+    const val ACTION_SHARE_DOWNLOAD = "action_share_download"
+    const val ACTION_EXPORT = "action_export"
 
     const val DOWNLOAD_URL = "download_url"
     const val DOWNLOAD_FILENAME = "download_filename"
@@ -20,6 +22,10 @@ object FileDownloader {
 
     const val UNZIP_URI = "unzip_uri"
     const val UNZIP_LOCALE = "unzip_locale"
+
+    const val EXPORT_MODEL_PATH = "export_model_path"
+    const val EXPORT_MODEL_NAME = "export_model_name"
+
     fun getInfoForIntent(intent: Intent): ModelInfo? {
         val url = intent.getStringExtra(DOWNLOAD_URL)
         val filename = intent.getStringExtra(DOWNLOAD_FILENAME)
@@ -36,31 +42,60 @@ object FileDownloader {
     }
 
     fun downloadModel(model: ModelLink, context: Context) {
-        var context = context
-        context = context.applicationContext
-        val serviceIntent = Intent(context, FileDownloadService::class.java)
-        serviceIntent.putExtra(ACTION, ACTION_DOWNLOAD)
-        serviceIntent.putExtra(DOWNLOAD_URL, model.link)
-        serviceIntent.putExtra(DOWNLOAD_FILENAME, model.filename)
-        serviceIntent.putExtra(DOWNLOAD_LOCALE, model.locale)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent)
-        } else {
-            context.startService(serviceIntent)
-        }
+        start(
+            context,
+            Intent(context, FileDownloadService::class.java)
+                .putExtra(ACTION, ACTION_DOWNLOAD)
+                .putExtra(DOWNLOAD_URL, model.link)
+                .putExtra(DOWNLOAD_FILENAME, model.filename)
+                .putExtra(DOWNLOAD_LOCALE, model.locale)
+        )
+    }
+
+    /**
+     * Download a model offered by another device on the local network.
+     * [url] is created by [com.elishaazaria.sayboard.share.SharedModel.downloadUrl].
+     */
+    fun downloadSharedModel(url: String, filename: String, locale: Locale, context: Context) {
+        start(
+            context,
+            Intent(context, FileDownloadService::class.java)
+                .putExtra(ACTION, ACTION_SHARE_DOWNLOAD)
+                .putExtra(DOWNLOAD_URL, url)
+                .putExtra(DOWNLOAD_FILENAME, filename)
+                .putExtra(DOWNLOAD_LOCALE, locale)
+        )
+    }
+
+    /**
+     * Pack an installed model into a .zip that can be handed to someone else
+     * (Bluetooth, Nearby Share, a USB cable, ...).
+     */
+    fun exportModel(modelFolderPath: String, modelName: String, context: Context) {
+        start(
+            context,
+            Intent(context, FileDownloadService::class.java)
+                .putExtra(ACTION, ACTION_EXPORT)
+                .putExtra(EXPORT_MODEL_PATH, modelFolderPath)
+                .putExtra(EXPORT_MODEL_NAME, modelName)
+        )
     }
 
     fun importModel(uri: Uri, context: Context) {
-        var context = context
-        context = context.applicationContext
-        val serviceIntent = Intent(context, FileDownloadService::class.java)
-        serviceIntent.putExtra(ACTION, ACTION_UNZIP)
-        serviceIntent.putExtra(UNZIP_URI, uri)
-//        serviceIntent.putExtra(UNZIP_LOCALE, locale)
+        start(
+            context,
+            Intent(context, FileDownloadService::class.java)
+                .putExtra(ACTION, ACTION_UNZIP)
+                .putExtra(UNZIP_URI, uri)
+        )
+    }
+
+    private fun start(context: Context, serviceIntent: Intent) {
+        val appContext = context.applicationContext
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent)
+            appContext.startForegroundService(serviceIntent)
         } else {
-            context.startService(serviceIntent)
+            appContext.startService(serviceIntent)
         }
     }
 }

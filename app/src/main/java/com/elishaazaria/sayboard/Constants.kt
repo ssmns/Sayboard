@@ -14,6 +14,9 @@ object Constants {
 
     @JvmField
     var DOWNLOADER_CHANNEL_ID = "downloader"
+
+    @JvmField
+    var SHARE_CHANNEL_ID = "sharing"
     private fun getCacheDir(context: Context): File {
         return if (Environment.isExternalStorageEmulated() || !Environment.isExternalStorageRemovable()) {
             context.externalCacheDir!!

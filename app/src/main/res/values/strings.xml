@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name" translatable="false">Sayboard</string>
+    <string name="app_name" translatable="false">sayTypist</string>
 
     <!--  Mic  -->
 
@@ -73,12 +73,60 @@
     <string name="models_model_display_name_null">Null</string>
 
     <string name="models_download_dialog_title">Download Model</string>
+    <string name="models_download_dialog_hint">Bigger models are more accurate but need more storage and RAM. Sizes and memory needs are shown for every model.</string>
+    <string name="models_size_tier_small">lightweight</string>
+    <string name="models_size_tier_medium">medium</string>
+    <string name="models_size_tier_large">large</string>
+    <string name="models_size_tier_huge">very large</string>
+    <string name="models_download_item_details">%1$s · %2$s</string>
+    <string name="models_download_item_installed">%1$s · %2$s · installed</string>
+    <string name="models_already_installed">%1$s is already installed</string>
+    <string name="models_download_confirm_title">Download this model?</string>
+    <string name="models_download_confirm_size">Download size: %1$s (%2$s)</string>
+    <string name="models_download_confirm_ram">Recommended RAM: about %1$d MB</string>
+    <string name="models_download_confirm_license">License: %1$s</string>
+    <string name="models_download_confirm_space_ok">Free space: %1$d MB — about %2$d MB will be used while installing.</string>
+    <string name="models_download_confirm_space_not_enough">Not enough free space: %1$d MB available, about %2$d MB needed.</string>
+    <string name="models_download_confirm_download">Download</string>
+    <string name="models_download_error">Download failed: %1$s</string>
+    <string name="models_download_error_no_space">Not enough storage to install this model: about %1$d MB needed, %2$d MB available.</string>
 
     <string name="models_import_dialog_import">Import</string>
     <string name="models_import_dialog_title">Import Model</string>
     <string name="models_import_dialog_text_before_link">Manually download a Vosk model from </string>
     <string name="models_import_dialog_text_link">the Vosk website</string>
-    <string name="models_import_dialog_text_after_link"> - make sure to pick a "small" model - and then choose it in the file picker after pressing import</string>
+    <string name="models_import_dialog_text_after_link"> - any Vosk model works, including the big ones - and then choose it in the file picker after pressing import</string>
+
+    <!--  Sharing models between devices  -->
+    <string name="share_dialog_title">Share models</string>
+    <string name="share_server_toggle">Share my models on this network</string>
+    <string name="share_server_toggle_summary">Other phones with sayTypist on the same Wi-Fi can copy them, without internet.</string>
+    <string name="share_server_address">Sharing at %1$s</string>
+    <string name="share_server_error">Could not start sharing: %1$s</string>
+    <string name="share_find_devices">Get models from another phone</string>
+    <string name="share_find_devices_summary">Turn on sharing on the other phone, keep both phones on the same Wi-Fi, then scan.</string>
+    <string name="share_scan">Scan the network</string>
+    <string name="share_manual_address_hint">Address shown on the other phone</string>
+    <string name="share_connect">Connect</string>
+    <string name="share_bad_address">Type the address like 192.168.1.5:41234</string>
+    <string name="share_scanning">Scanning…</string>
+    <string name="share_device_title">%1$s (%2$s)</string>
+    <string name="share_no_devices">No phone found. Check that both devices are on the same Wi-Fi network and that sharing is enabled on the other one.</string>
+    <string name="share_offline_hint">No network at all? Press the share icon next to an installed model to send it as a .zip file with Bluetooth, Nearby Share or a cable. The other phone can import it from this screen.</string>
+    <string name="share_model_file">Share model file</string>
+    <string name="share_chooser_title">Share model</string>
+    <string name="share_export_ready">%1$s is ready to be shared</string>
+    <string name="share_export_done_title">Model ready to share</string>
+    <string name="share_export_done_text">Tap to send %1$s to another device</string>
+    <string name="share_stop">Stop sharing</string>
+    <string name="share_notification_channel_name">Model sharing</string>
+    <string name="share_notification_channel_description">Shows that models are being shared on the local network</string>
+    <string name="share_notification_title">Sharing models on the network</string>
+    <string name="share_notification_text">Other devices can copy the models from %1$s</string>
+    <string name="share_error_bad_url">The address of the other device is not valid</string>
+    <string name="share_error_already_installed">%1$s is already installed on this device</string>
+    <string name="models_download_state_exporting">Preparing file…</string>
+    <string name="button_close">Close</string>
 
     <!-- UI Preferences -->
     <string name="ui_light_theme_header">Light Theme</string>
@@ -136,6 +184,7 @@
     <string name="notification_download_content_unknown">Loading…</string>
     <string name="notification_download_content_downloading">Downloading in progress…</string>
     <string name="notification_download_content_unzipping">Extracting Model…</string>
+    <string name="notification_download_content_exporting">Preparing the model file…</string>
     <string name="notification_download_content_finished">Download Finished!</string>
     <string name="notification_download_content_error">Error downloading Model</string>
 </resources>

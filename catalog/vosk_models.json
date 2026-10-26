@@ -1,0 +1,124 @@
+{
+  "_comment": [
+    "Single source of truth for the Vosk model catalog used by the Android downloader",
+    "and by the desktop app. Edit this file, then run `./gradlew :desktop:generateCatalog`",
+    "to regenerate app/src/main/java/com/elishaazaria/sayboard/data/ModelLink.kt.",
+    "Sources: https://alphacephei.com/vosk/models (sizes are the published sizes)."
+  ],
+  "tiers": [
+    {"id": "SMALL", "max_size_mb": 150, "ram_mb": 500},
+    {"id": "MEDIUM", "max_size_mb": 600, "ram_mb": 1500},
+    {"id": "LARGE", "max_size_mb": 1600, "ram_mb": 4000},
+    {"id": "HUGE", "max_size_mb": 100000, "ram_mb": 8000}
+  ],
+  "models": [
+    {"id": "vosk-model-small-en-us-0.15", "lang": "English (US)", "locale": "en-US", "size_mb": 40, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+    {"id": "vosk-model-en-us-0.22-lgraph", "lang": "English (US)", "locale": "en-US", "size_mb": 128, "license": "Apache-2.0", "notes": "Big US English model with dynamic graph"},
+    {"id": "vosk-model-en-us-librispeech-0.2", "lang": "English (US)", "locale": "en-US", "size_mb": 845, "license": "Apache-2.0", "notes": "Repackaged Librispeech model, not very accurate"},
+    {"id": "vosk-model-en-us-daanzu-20200905-lgraph", "lang": "English (US)", "locale": "en-US", "size_mb": 129, "license": "AGPL-3.0", "notes": "Dictation model from kaldi-active-grammar, dynamic graph"},
+    {"id": "vosk-model-en-us-0.21", "lang": "English (US)", "locale": "en-US", "size_mb": 1600, "license": "Apache-2.0", "notes": "Wideband model, previous generation"},
+    {"id": "vosk-model-en-us-0.22", "lang": "English (US)", "locale": "en-US", "size_mb": 1800, "license": "Apache-2.0", "notes": "Accurate generic US English model"},
+    {"id": "vosk-model-en-us-0.42-gigaspeech", "lang": "English (US)", "locale": "en-US", "size_mb": 2300, "license": "Apache-2.0", "notes": "Accurate model trained on Gigaspeech, best for podcasts"},
+    {"id": "vosk-model-en-us-daanzu-20200905", "lang": "English (US)", "locale": "en-US", "size_mb": 1000, "license": "AGPL-3.0", "notes": "Wideband dictation model from kaldi-active-grammar"},
+    {"id": "vosk-model-en-us-aspire-0.2", "lang": "English (US)", "locale": "en-US", "size_mb": 1400, "license": "Apache-2.0", "notes": "Kaldi original ASPIRE model, not very accurate"},
+    {"id": "vosk-model-small-en-us-zamia-0.5", "lang": "English (US)", "locale": "en-US", "size_mb": 49, "license": "LGPL-3.0", "notes": "Repackaged Zamia model, mainly for research"},
+
+    {"id": "vosk-model-small-en-in-0.4", "lang": "English (India)", "locale": "en-IN", "size_mb": 36, "license": "Apache-2.0", "notes": "Lightweight Indian English model for mobile applications"},
+    {"id": "vosk-model-en-in-0.5", "lang": "English (India)", "locale": "en-IN", "size_mb": 1000, "license": "Apache-2.0", "notes": "Generic Indian English model for telecom and broadcast"},
+
+    {"id": "vosk-model-small-cn-0.22", "lang": "Chinese", "locale": "zh", "size_mb": 42, "license": "Apache-2.0", "notes": "Lightweight model for Android and RPi"},
+    {"id": "vosk-model-cn-0.22", "lang": "Chinese", "locale": "zh", "size_mb": 1300, "license": "Apache-2.0", "notes": "Big generic Chinese model for server processing"},
+    {"id": "vosk-model-cn-kaldi-multicn-0.15", "lang": "Chinese", "locale": "zh", "size_mb": 1500, "license": "Apache-2.0", "notes": "Original wideband Kaldi multi-cn model"},
+
+    {"id": "vosk-model-small-ru-0.22", "lang": "Russian", "locale": "ru", "size_mb": 45, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android/iOS and RPi"},
+    {"id": "vosk-model-ru-0.22", "lang": "Russian", "locale": "ru", "size_mb": 1500, "license": "Apache-2.0", "notes": "Big mixed band Russian model for servers"},
+    {"id": "vosk-model-ru-0.42", "lang": "Russian", "locale": "ru", "size_mb": 1800, "license": "Apache-2.0", "notes": "Big mixed band Russian model for servers"},
+    {"id": "vosk-model-ru-0.10", "lang": "Russian", "locale": "ru", "size_mb": 2500, "license": "Apache-2.0", "notes": "Big narrowband Russian model for servers"},
+
+    {"id": "vosk-model-small-fr-0.22", "lang": "French", "locale": "fr", "size_mb": 41, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android/iOS and RPi"},
+    {"id": "vosk-model-small-fr-pguyot-0.3", "lang": "French", "locale": "fr", "size_mb": 39, "license": "CC-BY-NC-SA-4.0", "notes": "Lightweight model by Paul Guyot"},
+    {"id": "vosk-model-fr-0.22", "lang": "French", "locale": "fr", "size_mb": 1400, "license": "Apache-2.0", "notes": "Big accurate model for servers"},
+    {"id": "vosk-model-fr-0.6-linto-2.2.0", "lang": "French", "locale": "fr", "size_mb": 1500, "license": "AGPL-3.0", "notes": "Model from the LINTO project"},
+
+    {"id": "vosk-model-small-de-0.15", "lang": "German", "locale": "de", "size_mb": 45, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+    {"id": "vosk-model-small-de-zamia-0.3", "lang": "German", "locale": "de", "size_mb": 49, "license": "LGPL-3.0", "notes": "Zamia small model repackaged (not recommended)"},
+    {"id": "vosk-model-de-0.21", "lang": "German", "locale": "de", "size_mb": 1900, "license": "Apache-2.0", "notes": "Big German model for telephony and server"},
+    {"id": "vosk-model-de-tuda-0.6-900k", "lang": "German", "locale": "de", "size_mb": 4400, "license": "Apache-2.0", "notes": "Big wideband model from the Tuda-DE project"},
+
+    {"id": "vosk-model-small-es-0.42", "lang": "Spanish", "locale": "es", "size_mb": 39, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+    {"id": "vosk-model-es-0.42", "lang": "Spanish", "locale": "es", "size_mb": 1400, "license": "Apache-2.0", "notes": "Big model for Spanish"},
+
+    {"id": "vosk-model-small-pt-0.3", "lang": "Portuguese", "locale": "pt", "size_mb": 31, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+    {"id": "vosk-model-pt-fb-v0.1.1-20220516_2113", "lang": "Portuguese", "locale": "pt", "size_mb": 1600, "license": "GPL-3.0", "notes": "Big Brazilian Portuguese model from FalaBrazil"},
+
+    {"id": "vosk-model-el-gr-0.7", "lang": "Greek", "locale": "el", "size_mb": 1100, "license": "Apache-2.0", "notes": "Big narrowband Greek model for servers"},
+
+    {"id": "vosk-model-small-tr-0.3", "lang": "Turkish", "locale": "tr", "size_mb": 35, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+
+    {"id": "vosk-model-small-vn-0.4", "lang": "Vietnamese", "locale": "vi", "size_mb": 32, "license": "Apache-2.0", "notes": "Lightweight Vietnamese model"},
+    {"id": "vosk-model-vn-0.4", "lang": "Vietnamese", "locale": "vi", "size_mb": 78, "license": "Apache-2.0", "notes": "Bigger Vietnamese model for server"},
+
+    {"id": "vosk-model-small-it-0.22", "lang": "Italian", "locale": "it", "size_mb": 48, "license": "Apache-2.0", "notes": "Lightweight model for Android and RPi"},
+    {"id": "vosk-model-it-0.22", "lang": "Italian", "locale": "it", "size_mb": 1200, "license": "Apache-2.0", "notes": "Big generic Italian model for servers"},
+
+    {"id": "vosk-model-small-nl-0.22", "lang": "Dutch", "locale": "nl", "size_mb": 39, "license": "Apache-2.0", "notes": "Lightweight model for Dutch"},
+    {"id": "vosk-model-nl-spraakherkenning-0.6-lgraph", "lang": "Dutch", "locale": "nl", "size_mb": 100, "license": "CC-BY-NC-SA-4.0", "notes": "Dutch model with dynamic graph"},
+    {"id": "vosk-model-nl-spraakherkenning-0.6", "lang": "Dutch", "locale": "nl", "size_mb": 860, "license": "CC-BY-NC-SA-4.0", "notes": "Medium Dutch model from Kaldi_NL"},
+
+    {"id": "vosk-model-small-ca-0.4", "lang": "Catalan", "locale": "ca", "size_mb": 42, "license": "Apache-2.0", "notes": "Lightweight wideband model for Android and RPi"},
+
+    {"id": "vosk-model-ar-mgb2-0.4", "lang": "Arabic", "locale": "ar", "size_mb": 318, "license": "Apache-2.0", "notes": "Arabic model trained on the MGB-2 dataset"},
+    {"id": "vosk-model-ar-0.22-linto-1.1.0", "lang": "Arabic", "locale": "ar", "size_mb": 1300, "license": "AGPL-3.0", "notes": "Big model from the LINTO project"},
+    {"id": "vosk-model-small-ar-tn-0.1-linto", "lang": "Arabic (Tunisia)", "locale": "ar-TN", "size_mb": 158, "license": "Apache-2.0", "notes": "Small Tunisian Arabic model from Linagora"},
+    {"id": "vosk-model-ar-tn-0.1-linto", "lang": "Arabic (Tunisia)", "locale": "ar-TN", "size_mb": 517, "license": "Apache-2.0", "notes": "Tunisian Arabic model from Linagora"},
+
+    {"id": "vosk-model-small-fa-0.42", "lang": "Persian", "locale": "fa", "size_mb": 53, "license": "Apache-2.0", "notes": "Small model for desktop and mobile applications"},
+    {"id": "vosk-model-small-fa-0.5", "lang": "Persian", "locale": "fa", "size_mb": 60, "license": "Apache-2.0", "notes": "Bigger small model for desktop applications"},
+    {"id": "vosk-model-fa-0.5", "lang": "Persian", "locale": "fa", "size_mb": 1000, "license": "Apache-2.0", "notes": "Large vocabulary Persian model"},
+    {"id": "vosk-model-fa-0.42", "lang": "Persian", "locale": "fa", "size_mb": 1600, "license": "Apache-2.0", "notes": "Large vocabulary Persian model, best accuracy"},
+
+    {"id": "vosk-model-tl-ph-generic-0.6", "lang": "Filipino", "locale": "fil", "size_mb": 320, "license": "CC-BY-NC-SA-4.0", "notes": "Medium wideband model for Filipino (Tagalog)"},
+
+    {"id": "vosk-model-small-uk-v3-nano", "lang": "Ukrainian", "locale": "uk", "size_mb": 73, "license": "Apache-2.0", "notes": "Nano model for Ukrainian"},
+    {"id": "vosk-model-small-uk-v3-small", "lang": "Ukrainian", "locale": "uk", "size_mb": 133, "license": "Apache-2.0", "notes": "Small model for Ukrainian"},
+    {"id": "vosk-model-uk-v3-lgraph", "lang": "Ukrainian", "locale": "uk", "size_mb": 325, "license": "Apache-2.0", "notes": "Ukrainian model with dynamic graph"},
+    {"id": "vosk-model-uk-v3", "lang": "Ukrainian", "locale": "uk", "size_mb": 343, "license": "Apache-2.0", "notes": "Bigger Ukrainian model"},
+
+    {"id": "vosk-model-small-kz-0.42", "lang": "Kazakh", "locale": "kk", "size_mb": 58, "license": "Apache-2.0", "notes": "Small mobile model for Kazakh"},
+    {"id": "vosk-model-kz-0.42", "lang": "Kazakh", "locale": "kk", "size_mb": 1300, "license": "Apache-2.0", "notes": "Bigger model for Kazakh"},
+
+    {"id": "vosk-model-small-sv-rhasspy-0.15", "lang": "Swedish", "locale": "sv", "size_mb": 289, "license": "MIT", "notes": "Repackaged model from the Rhasspy project"},
+
+    {"id": "vosk-model-small-ja-0.22", "lang": "Japanese", "locale": "ja", "size_mb": 48, "license": "Apache-2.0", "notes": "Lightweight wideband model for Japanese"},
+    {"id": "vosk-model-ja-0.22", "lang": "Japanese", "locale": "ja", "size_mb": 1000, "license": "Apache-2.0", "notes": "Big model for Japanese"},
+
+    {"id": "vosk-model-small-eo-0.42", "lang": "Esperanto", "locale": "eo", "size_mb": 42, "license": "Apache-2.0", "notes": "Lightweight model for Esperanto"},
+
+    {"id": "vosk-model-small-hi-0.22", "lang": "Hindi", "locale": "hi", "size_mb": 42, "license": "Apache-2.0", "notes": "Lightweight model for Hindi"},
+    {"id": "vosk-model-hi-0.22", "lang": "Hindi", "locale": "hi", "size_mb": 1500, "license": "Apache-2.0", "notes": "Big accurate model for servers"},
+
+    {"id": "vosk-model-small-cs-0.4-rhasspy", "lang": "Czech", "locale": "cs", "size_mb": 44, "license": "MIT", "notes": "Lightweight model for Czech from Rhasspy"},
+
+    {"id": "vosk-model-small-pl-0.22", "lang": "Polish", "locale": "pl", "size_mb": 50, "license": "Apache-2.0", "notes": "Lightweight model for Polish"},
+
+    {"id": "vosk-model-small-uz-0.22", "lang": "Uzbek", "locale": "uz", "size_mb": 49, "license": "Apache-2.0", "notes": "Lightweight model for Uzbek"},
+
+    {"id": "vosk-model-small-ko-0.22", "lang": "Korean", "locale": "ko", "size_mb": 82, "license": "Apache-2.0", "notes": "Lightweight model for Korean"},
+
+    {"id": "vosk-model-br-0.8", "lang": "Breton", "locale": "br", "size_mb": 70, "license": "MIT", "notes": "Breton model from the vosk-br project"},
+
+    {"id": "vosk-model-small-gu-0.42", "lang": "Gujarati", "locale": "gu", "size_mb": 100, "license": "Apache-2.0", "notes": "Lightweight model for Gujarati"},
+    {"id": "vosk-model-gu-0.42", "lang": "Gujarati", "locale": "gu", "size_mb": 700, "license": "Apache-2.0", "notes": "Big Gujarati model"},
+
+    {"id": "vosk-model-small-tg-0.22", "lang": "Tajik", "locale": "tg", "size_mb": 50, "license": "Apache-2.0", "notes": "Lightweight model for Tajik"},
+    {"id": "vosk-model-tg-0.22", "lang": "Tajik", "locale": "tg", "size_mb": 327, "license": "Apache-2.0", "notes": "Big Tajik model"},
+
+    {"id": "vosk-model-small-te-0.42", "lang": "Telugu", "locale": "te", "size_mb": 58, "license": "Apache-2.0", "notes": "Lightweight model for Telugu"},
+
+    {"id": "vosk-model-small-ky-0.42", "lang": "Kyrgyz", "locale": "ky", "size_mb": 49, "license": "Apache-2.0", "notes": "Small mobile model for Kyrgyz"},
+    {"id": "vosk-model-ky-0.42", "lang": "Kyrgyz", "locale": "ky", "size_mb": 1100, "license": "Apache-2.0", "notes": "Bigger model for Kyrgyz"},
+
+    {"id": "vosk-model-small-ka-0.42", "lang": "Georgian", "locale": "ka", "size_mb": 45, "license": "Apache-2.0", "notes": "Small mobile model for Georgian"},
+    {"id": "vosk-model-ka-0.42", "lang": "Georgian", "locale": "ka", "size_mb": 700, "license": "Apache-2.0", "notes": "Bigger model for Georgian"}
+  ]
+}

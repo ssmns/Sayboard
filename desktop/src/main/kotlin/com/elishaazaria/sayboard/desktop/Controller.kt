@@ -84,6 +84,20 @@ class AppController {
     private var transcriptionCancelled = false
     private val transcriber by lazy { AudioTranscriber(engine) }
 
+    /** Result of the last "test the AI connection" run. */
+    var aiStatus by mutableStateOf<String?>(null)
+        private set
+
+    /** True while the transcript is being polished by the AI. */
+    var aiWorking by mutableStateOf(false)
+        private set
+
+    var datasetExporting by mutableStateOf(false)
+        private set
+
+    var datasetProgress by mutableStateOf<String?>(null)
+        private set
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val engine = RecognitionEngine()
     private val hotkeys = GlobalHotkeys()
@@ -316,6 +330,22 @@ class AppController {
         }
 
         override fun onFinal(text: String) {
+            val ai = config.ai
+            if (ai.isUsable() && ai.correctDictation) {
+                // the local model already produced a phrase: polish it first, then type
+                lastPhrase = text
+                if (config.showPreview) preview = text
+                aiWorking = true
+                scope.launch {
+                    val corrected = correctWithAi(text)
+                    aiWorking = false
+                    renderer.final(corrected)
+                    lastPhrase = corrected
+                    if (config.copyToClipboard) copyToClipboard(corrected)
+                    if (config.showPreview) preview = corrected
+                }
+                return
+            }
             renderer.final(text)
             lastPhrase = text
             if (config.copyToClipboard) copyToClipboard(text)
@@ -552,9 +582,14 @@ class AppController {
                     onProgress = { value -> transcriptionProgress = value },
                     isCancelled = { transcriptionCancelled },
                 )
-                transcript = result
+                val polished = if (config.ai.isUsable() && config.ai.correctTranscripts) {
+                    correctTranscript(result)
+                } else {
+                    result
+                }
+                transcript = polished
                 transcriptionProgress = 1f
-                log("Transcribed ${result.file.name}: ${result.lines.size} sentences")
+                log("Transcribed ${result.file.name}: ${polished.lines.size} sentences")
             } catch (e: TranscriptionException) {
                 if (transcriptionCancelled) {
                     log("Transcription cancelled")
@@ -570,6 +605,26 @@ class AppController {
                 if (transcriptionCancelled) transcriptionProgress = null
             }
         }
+    }
+
+    /** Runs every sentence through the AI, keeping the original text next to it. */
+    private fun correctTranscript(result: Transcript): Transcript {
+        aiWorking = true
+        log("Polishing ${result.lines.size} sentences with ${config.ai.providerType.label}")
+        val client = AiClient(config.ai)
+        val lines = ArrayList<TranscriptLine>(result.lines.size)
+        result.lines.forEachIndexed { index, line ->
+            transcriptionProgress = (index.toFloat() / result.lines.size).coerceAtMost(0.99f)
+            val corrected = try {
+                client.correct(line.rawText)
+            } catch (e: Exception) {
+                log("AI correction stopped at sentence ${index + 1}: ${e.message}")
+                line.rawText
+            }
+            lines.add(line.copy(text = corrected, rawText = line.rawText))
+        }
+        aiWorking = false
+        return result.copy(lines = lines)
     }
 
     fun cancelTranscription() {
@@ -592,6 +647,71 @@ class AppController {
         } catch (e: Exception) {
             log(strings.f("transcribe.failed", e.message ?: ""))
             false
+        }
+    }
+
+    /** Sends one phrase through the configured AI service, falling back to the raw text. */
+    private fun correctWithAi(text: String): String {
+        val ai = config.ai
+        return try {
+            val started = System.currentTimeMillis()
+            val corrected = AiClient(ai).correct(text)
+            log("AI correction (${System.currentTimeMillis() - started} ms): $corrected")
+            corrected
+        } catch (e: Exception) {
+            log("AI correction failed, keeping the original text: ${e.message}")
+            text
+        }
+    }
+
+    fun testAi(settings: AiSettings) {
+        aiStatus = "…"
+        scope.launch {
+            aiStatus = try {
+                val answer = AiClient(settings.copy(enabled = true)).testConnection()
+                log("AI connection OK: ${answer.take(60)}")
+                answer
+            } catch (e: Exception) {
+                log("AI connection failed: ${e.message}")
+                "✖ ${e.message}"
+            }
+        }
+    }
+
+    fun clearAiStatus() {
+        aiStatus = null
+    }
+
+    fun exportDataset(
+        folder: File,
+        options: DatasetExporter.Options,
+        modelName: String,
+    ) {
+        val result = transcript ?: return
+        if (datasetExporting) return
+        datasetExporting = true
+        datasetProgress = "0/${result.lines.size}"
+        log("Exporting dataset to ${folder.absolutePath}")
+        scope.launch {
+            try {
+                val exported = DatasetExporter.export(
+                    transcript = result,
+                    folder = folder,
+                    options = options,
+                    modelName = modelName,
+                    onProgress = { done, total -> datasetProgress = "$done/$total" },
+                    isCancelled = { false },
+                )
+                log(
+                    "Dataset written: ${exported.segments} segments " +
+                            "(${formatTimecode(exported.totalSeconds)}) in ${exported.folder.absolutePath}"
+                )
+            } catch (e: Exception) {
+                log("Dataset export failed: ${e.message}")
+            } finally {
+                datasetExporting = false
+                datasetProgress = null
+            }
         }
     }
 

@@ -80,7 +80,10 @@ The desktop app starts with nothing else installed. These are used when present:
 | Tool | Used for |
 | --- | --- |
 | `xdotool`, `wtype`, `ydotool` | typing into other applications (per session, see the user guide) |
-| `ffmpeg` / `ffprobe` | reading MP3, OGG, FLAC, M4A, … in the **Transcribe** tab (WAV needs nothing) |
+| `ffmpeg` / `ffprobe` | reading MP3, OGG/OGX, FLAC, M4A, … in the **Transcribe** tab (WAV needs nothing) |
+
+The optional AI correction uses only the JDK HTTP client (`java.net.http`), which
+is part of the packaged runtime — nothing to install.
 
 ## Tests
 

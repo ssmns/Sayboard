@@ -42,7 +42,9 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -58,6 +60,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -90,6 +93,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -202,6 +206,7 @@ fun AppScreen(controller: AppController) {
             var screen by remember { mutableStateOf(Screen.MODELS) }
             var pendingDownload by remember { mutableStateOf<CatalogModel?>(null) }
             var pendingFolder by remember { mutableStateOf<File?>(null) }
+            var datasetFolder by remember { mutableStateOf<File?>(null) }
 
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Box(Modifier.fillMaxSize()) {
@@ -212,7 +217,7 @@ fun AppScreen(controller: AppController) {
                             Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp)) {
                                 when (screen) {
                                     Screen.MODELS -> ModelsScreen(controller) { pendingDownload = it }
-                                    Screen.TRANSCRIBE -> TranscribeScreen(controller)
+                                    Screen.TRANSCRIBE -> TranscribeScreen(controller) { datasetFolder = it }
                                     Screen.SETTINGS -> SettingsScreen(controller) { pendingFolder = it }
                                     Screen.ABOUT -> AboutScreen(controller)
                                 }
@@ -231,6 +236,9 @@ fun AppScreen(controller: AppController) {
             }
             pendingFolder?.let { folder ->
                 MoveModelsDialog(controller, folder) { pendingFolder = null }
+            }
+            datasetFolder?.let { folder ->
+                DatasetDialog(controller, folder) { datasetFolder = null }
             }
         }
     }
@@ -749,13 +757,15 @@ private fun AvailableModelRow(model: CatalogModel, installed: Boolean, onDownloa
 
 // ------------------------------------------------------------------ transcribe
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TranscribeScreen(controller: AppController) {
+private fun TranscribeScreen(controller: AppController, onExportDataset: (File) -> Unit) {
     val s = LocalStrings.current
     val file = controller.transcriptionFile
     val transcript = controller.transcript
     val running = controller.transcriptionRunning
     val progress = controller.transcriptionProgress
+    var showRawText by remember(transcript) { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Card(
@@ -844,6 +854,22 @@ private fun TranscribeScreen(controller: AppController) {
                         }
                     }
                 }
+                if (controller.aiWorking) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            s["transcribe.aiWorking"],
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                controller.datasetProgress?.let { progressText ->
+                    Spacer(Modifier.height(6.dp))
+                    TinyChip(s.f("dataset.exporting", progressText.substringBefore('/').toIntOrNull() ?: 0, progressText.substringAfter('/').toIntOrNull() ?: 0))
+                }
                 if (running) {
                     Spacer(Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -888,6 +914,16 @@ private fun TranscribeScreen(controller: AppController) {
                             )
                         )
                     }
+                    if (transcript?.hasCorrections == true) {
+                        Spacer(Modifier.width(8.dp))
+                        TinyChip(s["transcribe.correctedTag"])
+                        Spacer(Modifier.width(8.dp))
+                        FilterChip(
+                            selected = showRawText,
+                            onClick = { showRawText = !showRawText },
+                            label = { Text(s["transcribe.raw"], fontSize = 11.sp) },
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     TextButton(
                         onClick = { controller.copyTranscript(withTimecodes = false) },
@@ -907,6 +943,20 @@ private fun TranscribeScreen(controller: AppController) {
                         },
                         enabled = transcript != null,
                     ) { Text(s["transcribe.save"], fontSize = 12.sp) }
+                    FilledTonalButton(
+                        onClick = { pickDirectory(s["dataset.chooseFolder"])?.let(onExportDataset) },
+                        enabled = transcript?.pcmFile != null && !controller.datasetExporting,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.height(34.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                    ) {
+                        Icon(Icons.Default.Save, null, Modifier.size(15.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(s["dataset.export"], fontSize = 12.sp)
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
                 if (transcript == null) {
@@ -929,7 +979,11 @@ private fun TranscribeScreen(controller: AppController) {
                                         modifier = Modifier.width(64.dp),
                                     )
                                     SelectionContainer {
-                                        Text(line.text, fontSize = 13.sp, color = Ink)
+                                        Text(
+                                            if (showRawText) line.rawText else line.text,
+                                            fontSize = 13.sp,
+                                            color = Ink,
+                                        )
                                     }
                                 }
                             }
@@ -965,6 +1019,37 @@ private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Un
     var startMinimized by remember(config.startMinimized) { mutableStateOf(config.startMinimized) }
     var error by remember { mutableStateOf<String?>(null) }
     val devices = remember { RecognitionEngine.inputDevices().map { it.name } }
+
+    val ai = config.ai
+    var aiEnabled by remember(ai) { mutableStateOf(ai.enabled) }
+    var aiProviderId by remember(ai) { mutableStateOf(ai.provider) }
+    var aiBaseUrl by remember(ai) { mutableStateOf(ai.baseUrl) }
+    var aiModel by remember(ai) { mutableStateOf(ai.model) }
+    var aiApiKey by remember(ai) { mutableStateOf(ai.apiKey) }
+    var aiPrompt by remember(ai) { mutableStateOf(ai.prompt) }
+    var aiDictation by remember(ai) { mutableStateOf(ai.correctDictation) }
+    var aiTranscripts by remember(ai) { mutableStateOf(ai.correctTranscripts) }
+
+    fun currentAi(): AiSettings = AiSettings(
+        enabled = aiEnabled,
+        provider = aiProviderId,
+        baseUrl = aiBaseUrl.trim(),
+        apiKey = aiApiKey.trim(),
+        model = aiModel.trim(),
+        prompt = aiPrompt,
+        correctDictation = aiDictation,
+        correctTranscripts = aiTranscripts,
+        timeoutSeconds = ai.timeoutSeconds,
+    )
+
+    fun saveAi() {
+        error = null
+        try {
+            controller.applySettings(config.copy(ai = currentAi()))
+        } catch (e: Exception) {
+            error = e.message ?: "…"
+        }
+    }
 
     fun save(validateHotkey: Boolean = true) {
         error = null
@@ -1034,6 +1119,91 @@ private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Un
             ToggleRow(s["settings.showPreview"], showPreview) { showPreview = it; save(validateHotkey = false) }
             ToggleRow(s["settings.copyPhrases"], copyToClipboard) { copyToClipboard = it; save(validateHotkey = false) }
             ToggleRow(s["settings.startMinimized"], startMinimized) { startMinimized = it; save(validateHotkey = false) }
+        }
+
+        SectionCard(s["ai.section"]) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(checked = aiEnabled, onCheckedChange = { aiEnabled = it; saveAi() })
+                Spacer(Modifier.width(12.dp))
+                Text(s["ai.enable"], fontSize = 13.sp)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                s["ai.privacy"],
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            FieldRow(s["ai.provider"]) {
+                UiDropdown(
+                    selected = AiProvider.fromId(aiProviderId).label,
+                    options = AiProvider.values().map { it.label to it.id },
+                    modifier = Modifier.width(240.dp).height(FIELD_HEIGHT),
+                ) { id ->
+                    val old = AiProvider.fromId(aiProviderId)
+                    val new = AiProvider.fromId(id)
+                    if (aiBaseUrl.isBlank() || aiBaseUrl == old.defaultBase) aiBaseUrl = new.defaultBase
+                    if (aiModel.isBlank() || aiModel == old.defaultModel) aiModel = new.defaultModel
+                    aiProviderId = id
+                    saveAi()
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(AiProvider.fromId(aiProviderId).defaultBase, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            FieldRow(s["ai.baseUrl"]) {
+                OutlinedTextField(
+                    value = aiBaseUrl,
+                    onValueChange = { aiBaseUrl = it; saveAi() },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.width(420.dp).height(FIELD_HEIGHT),
+                )
+            }
+            FieldRow(s["ai.model"]) {
+                OutlinedTextField(
+                    value = aiModel,
+                    onValueChange = { aiModel = it; saveAi() },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.width(260.dp).height(FIELD_HEIGHT),
+                )
+            }
+            FieldRow(s["ai.apiKey"]) {
+                OutlinedTextField(
+                    value = aiApiKey,
+                    onValueChange = { aiApiKey = it; saveAi() },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.width(360.dp).height(FIELD_HEIGHT),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(s["ai.keyNote"], fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            FieldRow(s["ai.prompt"]) {
+                OutlinedTextField(
+                    value = aiPrompt,
+                    onValueChange = { aiPrompt = it; saveAi() },
+                    placeholder = { Text(s["ai.promptHint"], fontSize = 11.sp) },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 64.dp, max = 120.dp),
+                )
+            }
+            ToggleRow(s["ai.correctDictation"], aiDictation) { aiDictation = it; saveAi() }
+            ToggleRow(s["ai.correctTranscripts"], aiTranscripts) { aiTranscripts = it; saveAi() }
+            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(
+                    onClick = { controller.testAi(currentAi()) },
+                    shape = RoundedCornerShape(50),
+                    enabled = !currentAi().isUsable().not(),
+                ) { Text(s["ai.test"], fontSize = 12.sp) }
+                Spacer(Modifier.width(12.dp))
+                LtrText(
+                    controller.aiStatus ?: if (!currentAi().isUsable()) s["ai.notConfigured"] else "",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         SectionCard(s["settings.storage"]) {
@@ -1311,6 +1481,71 @@ private fun DownloadConfirmDialog(model: CatalogModel, controller: AppController
 }
 
 @Composable
+private fun DatasetDialog(controller: AppController, folder: File, onDismiss: () -> Unit) {
+    val s = LocalStrings.current
+    val transcript = controller.transcript
+    var padding by remember { mutableStateOf(controller.config.datasetPaddingMs.toString()) }
+    var useCorrected by remember(transcript) { mutableStateOf(transcript?.hasCorrections ?: false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(s["dataset.title"], fontSize = 17.sp, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(s["dataset.text"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(12.dp))
+                FieldRow(s["dataset.padding"]) {
+                    OutlinedTextField(
+                        value = padding,
+                        onValueChange = { value -> padding = value.filter { it.isDigit() }.take(5) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.width(120.dp).height(FIELD_HEIGHT),
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = useCorrected, onCheckedChange = { useCorrected = it })
+                    Spacer(Modifier.width(8.dp))
+                    Text(s["dataset.useCorrected"], fontSize = 12.sp)
+                }
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(10.dp)) {
+                        LtrText(folder.absolutePath, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                        transcript?.let {
+                            LtrText(
+                                "${it.lines.size} sentences · ${formatTimecode(it.durationSeconds)}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = transcript?.pcmFile != null,
+                onClick = {
+                    onDismiss()
+                    val ms = padding.toIntOrNull() ?: 150
+                    controller.applySettings(controller.config.copy(datasetPaddingMs = ms))
+                    controller.exportDataset(
+                        folder = folder,
+                        options = DatasetExporter.Options(paddingMs = ms, useCorrected = useCorrected),
+                        modelName = controller.config.model,
+                    )
+                },
+            ) { Text(s["dataset.export"], fontSize = 12.sp) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(s["action.cancel"]) } },
+    )
+}
+
+@Composable
 private fun BoxScope.RequirementsPanel(controller: AppController) {
     val s = LocalStrings.current
     val checks = controller.diagnostics
@@ -1452,10 +1687,10 @@ private fun saveTextFile(suggestedName: String): File? {
     }
 }
 
-private fun pickDirectory(): File? {
+private fun pickDirectory(title: String = "Choose the models folder"): File? {
     return try {
         val chooser = JFileChooser(AppPaths.modelsDir())
-        chooser.dialogTitle = "Choose the models folder"
+        chooser.dialogTitle = title
         chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
         chooser.isAcceptAllFileFilterUsed = false
         if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null

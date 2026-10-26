@@ -16,9 +16,24 @@ import javax.sound.sampled.AudioSystem
 class TranscriptionException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
 /** One recognized sentence of an audio file, with its position in the file. */
-data class TranscriptLine(val startSeconds: Double, val endSeconds: Double, val text: String)
+data class TranscriptLine(
+    val startSeconds: Double,
+    val endSeconds: Double,
+    val text: String,
+    /** What the speech engine said, before any AI correction. */
+    val rawText: String = text,
+) {
+    val corrected: Boolean
+        get() = text != rawText
+}
 
-data class Transcript(val file: File, val lines: List<TranscriptLine>, val durationSeconds: Double) {
+data class Transcript(
+    val file: File,
+    val lines: List<TranscriptLine>,
+    val durationSeconds: Double,
+    /** 16 kHz mono PCM copy of the file, used to cut dataset segments. */
+    val pcmFile: File? = null,
+) {
     val text: String
         get() = lines.joinToString("\n") { it.text }
 
@@ -27,6 +42,13 @@ data class Transcript(val file: File, val lines: List<TranscriptLine>, val durat
 
     val wordCount: Int
         get() = lines.sumOf { line -> line.text.split(' ').count { it.isNotBlank() } }
+
+    val hasCorrections: Boolean
+        get() = lines.any { it.corrected }
+
+    fun deleteAudio() {
+        pcmFile?.delete()
+    }
 }
 
 fun formatTimecode(seconds: Double): String {
@@ -178,6 +200,8 @@ class AudioTranscriber(private val engine: RecognitionEngine) {
         val lines = ArrayList<TranscriptLine>()
         var processedBytes = 0L
         var sentenceStartSeconds = 0.0
+        val pcmFile = File.createTempFile("saytypist-audio-", ".wav")
+        PcmWavWriter(pcmFile).use { pcm ->
 
         AudioFileReader.openPcm(file, isCancelled).use { stream ->
             val recognizer = Recognizer(model, AudioFileReader.TARGET_RATE)
@@ -186,6 +210,7 @@ class AudioTranscriber(private val engine: RecognitionEngine) {
                 while (!isCancelled()) {
                     val read = stream.read(buffer, 0, buffer.size)
                     if (read <= 0) break
+                    pcm.write(buffer, read)
                     processedBytes += read.toLong()
                     val position = processedBytes / BYTES_PER_SECOND
                     if (recognizer.acceptWaveForm(buffer, read)) {
@@ -215,7 +240,8 @@ class AudioTranscriber(private val engine: RecognitionEngine) {
         }
         if (isCancelled()) throw TranscriptionException("cancelled")
         val realDuration = if (duration > 0) duration else processedBytes / BYTES_PER_SECOND
-        return Transcript(file, lines, realDuration)
+        return Transcript(file, lines, realDuration, pcmFile)
+    }
     }
 
     private fun textOf(result: String): String {
@@ -234,5 +260,54 @@ class AudioTranscriber(private val engine: RecognitionEngine) {
 
     companion object {
         private const val BYTES_PER_SECOND = 16000.0 * 2.0
+    }
+}
+
+/**
+ * Writes a canonical 16 kHz mono 16 bit WAV file while the audio is being
+ * recognized, so dataset segments can be cut later without decoding twice.
+ */
+class PcmWavWriter(val file: File) : AutoCloseable {
+    private val raf = java.io.RandomAccessFile(file, "rw")
+    private var dataBytes = 0L
+
+    init {
+        raf.setLength(0)
+        raf.write(header(0))
+    }
+
+    fun write(buffer: ByteArray, length: Int) {
+        raf.write(buffer, 0, length)
+        dataBytes += length
+    }
+
+    override fun close() {
+        raf.seek(0)
+        raf.write(header(dataBytes))
+        raf.close()
+    }
+
+    companion object {
+        const val HEADER_SIZE = 44L
+
+        fun header(dataBytes: Long): ByteArray {
+            val byteRate = 16000 * 2
+            val header = java.nio.ByteBuffer.allocate(HEADER_SIZE.toInt())
+                .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            header.put("RIFF".toByteArray(Charsets.US_ASCII))
+            header.putInt((36 + dataBytes).toInt())
+            header.put("WAVE".toByteArray(Charsets.US_ASCII))
+            header.put("fmt ".toByteArray(Charsets.US_ASCII))
+            header.putInt(16)
+            header.putShort(1) // PCM
+            header.putShort(1) // mono
+            header.putInt(16000)
+            header.putInt(byteRate)
+            header.putShort(2) // block align
+            header.putShort(16) // bits per sample
+            header.put("data".toByteArray(Charsets.US_ASCII))
+            header.putInt(dataBytes.toInt())
+            return header.array()
+        }
     }
 }

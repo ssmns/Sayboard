@@ -27,6 +27,10 @@ data class AppConfig(
     val modelsDir: String = "",
     /** The log pane is expanded. */
     val logVisible: Boolean = false,
+    /** Optional AI post-processing of the recognized text. */
+    val ai: AiSettings = AiSettings(),
+    /** Padding around every segment when a dataset is exported. */
+    val datasetPaddingMs: Int = 150,
     /** The "what do I need to install" dialog has been shown once. */
     val requirementsSeen: Boolean = false,
 )

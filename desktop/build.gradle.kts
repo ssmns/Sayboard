@@ -71,7 +71,7 @@ compose.desktop {
             packageVersion = projectVersion
             description = "sayTypist - offline voice typing with Vosk models"
             vendor = "sayTypist"
-            modules("java.desktop", "java.logging", "jdk.unsupported", "java.sql")
+            modules("java.desktop", "java.logging", "java.net.http", "jdk.unsupported", "java.sql")
 
             linux {
                 shortcut = true

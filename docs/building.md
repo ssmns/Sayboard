@@ -39,6 +39,7 @@ cd desktop && ./package-appimage.sh     # -> desktop/build/sayTypist-<version>-x
 ./gradlew :desktop:packageDeb           # -> desktop/build/compose/binaries/main/deb
 ./gradlew :desktop:packageRpm           # -> desktop/build/compose/binaries/main/rpm
 ./gradlew :desktop:createDistributable  # portable folder (Linux or Windows)
+cd packaging/arch && makepkg -f        # Arch Linux package (.pkg.tar.zst)
 gradlew.bat :desktop:packageMsi         # Windows installer (needs WiX)
 ```
 
@@ -99,3 +100,4 @@ version.properties       version of the whole project
 | `SDK location not found` | create `local.properties` with `sdk.dir=…` or set `ANDROID_HOME`. |
 | AppImage shows a black window | start it with `SKIKO_RENDER_API=SOFTWARE`; the machine lacks working OpenGL. |
 | `:desktop:packageRpm` fails | install `rpmbuild` (`rpm-build`, `rpmdevtools`). |
+| Arch package is old | `cd packaging/arch && makepkg -f` after `:desktop:createDistributable`. |

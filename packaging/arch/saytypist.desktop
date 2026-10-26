@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=sayTypist
+GenericName=Voice typing
+Comment=Offline voice typing with Vosk models
+Exec=/opt/saytypist/bin/sayTypist
+Icon=saytypist
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=dictation;speech;voice;typing;vosk;
+StartupWMClass=sayTypist

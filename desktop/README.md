@@ -90,6 +90,18 @@ chmod +x sayTypist-1.0.0-x86_64.AppImage
 `.deb` needs `dpkg-deb` (part of `dpkg`), `.rpm` needs `rpmbuild` (part of
 `rpm-build`/`rpmdevtools`) on the build machine. The AppImage needs neither.
 
+### Arch Linux
+
+```bash
+./gradlew :desktop:createDistributable
+cd packaging/arch && makepkg -f
+# -> packaging/arch/saytypist-<version>-1-x86_64.pkg.tar.zst
+```
+
+The PKGBUILD installs the app into `/opt/saytypist`, adds `saytypist` to `PATH`,
+the menu entry, the icon, the user guide and the licenses; see
+[packaging/arch/README.md](../packaging/arch/README.md).
+
 ### Windows
 
 ```bat

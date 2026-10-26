@@ -39,3 +39,9 @@ google-services.json
 # Desktop app (Python)
 __pycache__/
 *.pyc
+
+# Arch packaging output and final artifacts
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.pkg.tar.*
+dist/

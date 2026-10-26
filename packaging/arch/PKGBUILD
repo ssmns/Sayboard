@@ -1,0 +1,71 @@
+# Maintainer: sayTypist <https://github.com/ssmns/Sayboard>
+#
+# Arch package for the sayTypist desktop app.
+#
+# It installs the self-contained app image that Gradle/jpackage produces, so the
+# bundled Java runtime and the Vosk native library are included and nothing else
+# has to be installed for the app itself to start.
+#
+# Building from this repository:
+#
+#   cd packaging/arch
+#   makepkg -f
+#
+# (the app image is expected at desktop/build/compose/binaries/main/app/sayTypist;
+# run `./gradlew :desktop:createDistributable` first, or point SAYTYPIST_APPDIR
+# to an unpacked app image). The result is saytypist-<version>-1-x86_64.pkg.tar.zst.
+
+pkgname=saytypist
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Offline voice typing for Linux and Windows with Vosk models"
+arch=('x86_64')
+url="https://github.com/ssmns/Sayboard"
+license=('GPL3')
+depends=('glibc')
+optdepends=(
+    'xdotool: type into X11 applications'
+    'wtype: type into wlroots Wayland applications (Sway, Hyprland)'
+    'ydotool: type into Wayland applications through uinput (recommended on GNOME/KDE)'
+    'wl-clipboard: clipboard support on Wayland'
+    'xclip: clipboard support on X11'
+)
+provides=('sayTypist')
+conflicts=('sayboard' 'saytypist-bin')
+options=('!strip' '!debug')
+install=saytypist.install
+
+# the package is assembled from the local build output, no network needed
+appdir="${SAYTYPIST_APPDIR:-$startdir/../../desktop/build/compose/binaries/main/app/sayTypist}"
+
+prepare() {
+    if [[ ! -x "$appdir/bin/sayTypist" ]]; then
+        error "app image not found at $appdir"
+        error "run './gradlew :desktop:createDistributable' first"
+        return 1
+    fi
+}
+
+package() {
+    install -dm755 "$pkgdir/opt/saytypist"
+    cp -a "$appdir/." "$pkgdir/opt/saytypist/"
+
+    install -dm755 "$pkgdir/usr/bin"
+    ln -s /opt/saytypist/bin/sayTypist "$pkgdir/usr/bin/saytypist"
+
+    install -Dm644 "$startdir/saytypist.desktop" \
+        "$pkgdir/usr/share/applications/saytypist.desktop"
+    install -Dm644 "$startdir/../../desktop/icons/saytypist.png" \
+        "$pkgdir/usr/share/icons/hicolor/512x512/apps/saytypist.png"
+    install -Dm644 "$startdir/../../LICENSE.txt" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "$startdir/../../docs/third-party.md" \
+        "$pkgdir/usr/share/licenses/$pkgname/THIRD-PARTY.md"
+    install -Dm644 "$startdir/../../docs/desktop-user-guide.md" \
+        "$pkgdir/usr/share/doc/$pkgname/USER-GUIDE.md"
+    install -Dm644 "$startdir/../../docs/desktop-user-guide.fa.md" \
+        "$pkgdir/usr/share/doc/$pkgname/USER-GUIDE.fa.md"
+
+    # fix ownership/permissions of the bundled runtime
+    chmod -R u+rwX,go+rX,go-w "$pkgdir/opt/saytypist"
+}

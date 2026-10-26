@@ -138,6 +138,88 @@ class DatasetExportTest {
     }
 
     @Test
+    fun `a second export appends to the same dataset`() {
+        val dir = Files.createTempDirectory("saytypist-append-").toFile()
+        val pcm = File(dir, "source.wav")
+        PcmWavWriter(pcm).use { writer -> writer.write(ByteArray(32000), 32000) } // 1 s
+        val first = Transcript(
+            file = File(dir, "one.wav"),
+            lines = listOf(TranscriptLine(0.0, 0.4, "First take.")),
+            durationSeconds = 1.0,
+            pcmFile = pcm,
+        )
+        val folder = File(dir, "dataset")
+        DatasetExporter.export(first, folder, DatasetExporter.Options(paddingMs = 0, append = true))
+        assertEquals(1, DatasetExporter.existingSegments(folder))
+
+        val second = first.copy(
+            file = File(dir, "two.wav"),
+            lines = listOf(TranscriptLine(0.2, 0.8, "Second take.")),
+        )
+        val result = DatasetExporter.export(second, folder, DatasetExporter.Options(paddingMs = 0, append = true))
+
+        assertEquals(2, result.segments)
+        assertEquals(1, result.previousSegments)
+        assertEquals(2, DatasetExporter.existingSegments(folder))
+        val csv = File(folder, "metadata.csv").readText().trim().lines()
+        assertEquals(2, csv.size, csv.toString())
+        assertTrue(csv[0].startsWith("wavs/0001.wav|"), csv[0])
+        assertTrue(csv[1].startsWith("wavs/0002.wav|"), csv[1])
+        val json = File(folder, "dataset.json").readText()
+        assertTrue(json.contains("\"segments\":2"), json)
+        assertTrue(json.contains("two.wav"), json)
+        assertTrue(json.contains("one.wav"), json)
+
+        // replacing starts again from 0001
+        val replaced = DatasetExporter.export(
+            second, folder, DatasetExporter.Options(paddingMs = 0, append = false)
+        )
+        assertEquals(1, replaced.segments)
+        assertEquals(1, DatasetExporter.existingSegments(folder))
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `dictated phrases are appended as single segments`() {
+        val dir = Files.createTempDirectory("saytypist-dictation-").toFile()
+        val folder = File(dir, "dataset")
+        val phrase = ByteArray(16000) { (it % 50).toByte() } // 0.5 s
+        val result = DatasetExporter.appendSegments(
+            folder = folder,
+            segments = listOf(
+                DatasetExporter.SegmentInput(phrase, "سلام دنیا", "سلام دنیا", "microphone"),
+                DatasetExporter.SegmentInput(phrase, "Hello world", "hello world", "microphone"),
+            ),
+            sourceLabel = "microphone",
+            modelName = "vosk-model-small-fa-0.5",
+            options = DatasetExporter.Options(paddingMs = 0, append = true),
+        )
+        assertEquals(2, result.segments)
+        assertEquals(2, DatasetExporter.existingSegments(folder))
+        val csv = File(folder, "metadata.csv").readText().trim().lines()
+        assertEquals("wavs/0001.wav|سلام دنیا", csv[0])
+        assertTrue(File(folder, "dataset.json").readText().contains("microphone"))
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `silence around a phrase is trimmed`() {
+        val silent = ByteArray(16000 * 2 / 2) // 0.5 s of silence
+        val speechLength = 16000 // 0.5 s of a loud tone
+        val buffer = ByteArray(silent.size + speechLength + silent.size)
+        for (index in 0 until speechLength) {
+            val sample = (Math.sin(index / 10.0) * 12000).toInt().toShort()
+            buffer[silent.size + index] = (sample.toInt() and 0xFF).toByte()
+        }
+        val range = SilenceTrimmer.speechRange(buffer, buffer.size, paddingMs = 40)
+        val fromSeconds = range.first / 32000.0
+        val toSeconds = range.last / 32000.0
+        assertTrue(fromSeconds in 0.3..0.6, "start $fromSeconds")
+        assertTrue(toSeconds in 0.9..1.3, "end $toSeconds")
+        assertTrue(SilenceTrimmer.speechRange(ByteArray(32000)).isEmpty())
+    }
+
+    @Test
     fun `the wav header is canonical`() {
         val header = PcmWavWriter.header(32000)
         assertEquals(44, header.size)
@@ -149,5 +231,67 @@ class DatasetExportTest {
                 ((header[42].toInt() and 0xFF) shl 16) or
                 ((header[43].toInt() and 0xFF) shl 24)
         assertEquals(32000, dataSize)
+    }
+}
+
+class DatasetStoreTest {
+
+    private fun buildDataset(dir: File): File {
+        val pcm = File(dir, "source.wav")
+        PcmWavWriter(pcm).use { writer -> writer.write(ByteArray(32000), 32000) }
+        val transcript = Transcript(
+            file = File(dir, "source.wav"),
+            lines = listOf(
+                TranscriptLine(0.0, 0.3, "First.", rawText = "first"),
+                TranscriptLine(0.4, 0.8, "Second.", rawText = "second"),
+            ),
+            durationSeconds = 1.0,
+            pcmFile = pcm,
+        )
+        val folder = File(dir, "dataset")
+        DatasetExporter.export(transcript, folder, DatasetExporter.Options(paddingMs = 0, append = true))
+        return folder
+    }
+
+    @Test
+    fun `segments are listed with text, duration and raw text`() {
+        val dir = Files.createTempDirectory("saytypist-store-").toFile()
+        val folder = buildDataset(dir)
+        val segments = DatasetStore.load(folder)
+        assertEquals(2, segments.size)
+        assertEquals(1, segments[0].index)
+        assertEquals("First.", segments[0].text)
+        assertEquals("first", segments[0].rawText)
+        assertTrue(segments[0].durationSeconds > 0.2, "${segments[0].durationSeconds}")
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `editing a segment rewrites both metadata files`() {
+        val dir = Files.createTempDirectory("saytypist-store-").toFile()
+        val folder = buildDataset(dir)
+        DatasetStore.updateText(folder, 2, "Second sentence, fixed.")
+        val reloaded = DatasetStore.load(folder)
+        assertEquals("Second sentence, fixed.", reloaded.first { it.index == 2 }.text)
+        assertTrue(File(folder, "metadata.csv").readText().contains("wavs/0002.wav|Second sentence, fixed."))
+        val tsv = File(folder, "metadata.tsv").readText()
+        assertTrue(tsv.contains("Second sentence, fixed."), tsv)
+        // the original text is kept for reference
+        assertTrue(tsv.contains("second"), tsv)
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `deleting a segment removes its audio and metadata row`() {
+        val dir = Files.createTempDirectory("saytypist-store-").toFile()
+        val folder = buildDataset(dir)
+        DatasetStore.delete(folder, 1)
+        val segments = DatasetStore.load(folder)
+        assertEquals(listOf(2), segments.map { it.index })
+        assertTrue(!File(folder, "wavs/0001.wav").exists())
+        val csv = File(folder, "metadata.csv").readText().trim().lines()
+        assertEquals(1, csv.size, csv.toString())
+        assertTrue(csv[0].startsWith("wavs/0002.wav|"), csv[0])
+        dir.deleteRecursively()
     }
 }

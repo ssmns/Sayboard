@@ -44,6 +44,15 @@ class TranscriptionIntegrationTest {
     }
 
     @Test
+    fun `phone recordings in m4a container are accepted`() {
+        assertTrue(AudioFileReader.supportedExtensions.contains("m4a"))
+        assertTrue(AudioFileReader.supportedExtensions.contains("aac"))
+        // .m4a is AAC in an MP4 container: never handled by Java itself
+        assertTrue(!AudioFileReader.isWav(java.io.File("voice-note.m4a")))
+        assertTrue(!AudioFileReader.isWav(java.io.File("voice-note.M4A")))
+    }
+
+    @Test
     fun `ogg based containers are accepted`() {
         listOf("ogx", "ogv", "ogg", "oga", "opus", "spx").forEach { extension ->
             assertTrue(

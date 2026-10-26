@@ -31,6 +31,14 @@ data class AppConfig(
     val ai: AiSettings = AiSettings(),
     /** Padding around every segment when a dataset is exported. */
     val datasetPaddingMs: Int = 150,
+    /** Build (or extend) a dataset after every transcription, without asking. */
+    val datasetAutoExport: Boolean = false,
+    /** Where auto exports go; empty means "ask / choose in the Transcribe tab". */
+    val datasetFolder: String = "",
+    /** Use the AI corrected sentences in datasets. */
+    val datasetUseCorrected: Boolean = true,
+    /** Keep the audio of every dictated phrase and add it to the dataset. */
+    val datasetCaptureDictation: Boolean = false,
     /** The "what do I need to install" dialog has been shown once. */
     val requirementsSeen: Boolean = false,
 )

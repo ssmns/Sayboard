@@ -98,6 +98,18 @@ class AppController {
     var datasetProgress by mutableStateOf<String?>(null)
         private set
 
+    // ------------------------------------------------------------ dataset browser
+    var datasetSegments by mutableStateOf<List<DatasetSegment>>(emptyList())
+        private set
+
+    var datasetFolderPath by mutableStateOf(config.datasetFolder)
+        private set
+
+    var selectedSegmentIndex by mutableStateOf<Int?>(null)
+
+    var datasetError by mutableStateOf<String?>(null)
+        private set
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val engine = RecognitionEngine()
     private val hotkeys = GlobalHotkeys()
@@ -306,7 +318,12 @@ class AppController {
         }
         renderer.reset()
         engine.keepModelLoaded = config.keepModelLoaded
-        engine.start(model.directory.absolutePath, config.device, listener)
+        val captureDir = if (config.datasetCaptureDictation && config.datasetFolder.isNotBlank()) {
+            java.nio.file.Files.createTempDirectory("saytypist-dictation-").toFile()
+        } else {
+            null
+        }
+        engine.start(model.directory.absolutePath, config.device, listener, captureDir)
     }
 
     private fun stopDictation() {
@@ -329,7 +346,7 @@ class AppController {
             if (config.showPreview) preview = text
         }
 
-        override fun onFinal(text: String) {
+        override fun onFinal(text: String, audio: File?) {
             val ai = config.ai
             if (ai.isUsable() && ai.correctDictation) {
                 // the local model already produced a phrase: polish it first, then type
@@ -339,21 +356,67 @@ class AppController {
                 scope.launch {
                     val corrected = correctWithAi(text)
                     aiWorking = false
-                    renderer.final(corrected)
-                    lastPhrase = corrected
-                    if (config.copyToClipboard) copyToClipboard(corrected)
-                    if (config.showPreview) preview = corrected
+                    finishPhrase(corrected, text, audio)
                 }
                 return
             }
-            renderer.final(text)
-            lastPhrase = text
-            if (config.copyToClipboard) copyToClipboard(text)
-            if (config.showPreview) preview = text
+            finishPhrase(text, text, audio)
         }
 
         override fun onError(message: String) {
             log("Recognition error: $message")
+        }
+    }
+
+    /** Types the phrase, keeps it in the clipboard and adds its audio to the dataset. */
+    private fun finishPhrase(finalText: String, rawText: String, audio: File?) {
+        renderer.final(finalText)
+        lastPhrase = finalText
+        if (config.copyToClipboard) copyToClipboard(finalText)
+        if (config.showPreview) preview = finalText
+        if (audio != null) {
+            appendDictatedSegment(audio, finalText, rawText)
+        }
+    }
+
+    private fun appendDictatedSegment(audio: File, text: String, rawText: String) {
+        try {
+            val folderPath = config.datasetFolder
+            if (!config.datasetCaptureDictation || folderPath.isBlank()) {
+                audio.delete()
+                return
+            }
+            val folder = File(folderPath)
+            if (!folder.exists() && !folder.mkdirs()) {
+                log("Could not create the dataset folder $folderPath")
+                audio.delete()
+                return
+            }
+            val pcm = readPcmWav(audio)
+            val result = DatasetExporter.appendSegments(
+                folder = folder,
+                segments = listOf(
+                    DatasetExporter.SegmentInput(
+                        pcm = pcm,
+                        text = text,
+                        rawText = rawText,
+                        source = "microphone",
+                        endSeconds = pcm.size / (16000.0 * 2.0),
+                    )
+                ),
+                sourceLabel = "microphone",
+                modelName = config.model,
+                options = DatasetExporter.Options(
+                    paddingMs = 0,
+                    useCorrected = config.datasetUseCorrected,
+                    append = true,
+                ),
+            )
+            log("Dataset: dictated phrase added (${result.segments} segments in total)")
+        } catch (e: Exception) {
+            log("Could not add the dictated audio to the dataset: ${e.message}")
+        } finally {
+            audio.delete()
         }
     }
 
@@ -590,6 +653,9 @@ class AppController {
                 transcript = polished
                 transcriptionProgress = 1f
                 log("Transcribed ${result.file.name}: ${polished.lines.size} sentences")
+                if (config.datasetAutoExport) {
+                    exportDatasetAutomatically(polished)
+                }
             } catch (e: TranscriptionException) {
                 if (transcriptionCancelled) {
                     log("Transcription cancelled")
@@ -680,6 +746,93 @@ class AppController {
 
     fun clearAiStatus() {
         aiStatus = null
+    }
+
+    fun existingDatasetSegments(folder: File): Int = DatasetExporter.existingSegments(folder)
+
+    /** Loads the segments of a dataset folder for the dataset tab. */
+    fun loadDataset(folder: File?) {
+        val target = folder ?: datasetFolderPath.takeIf { it.isNotBlank() }?.let { File(it) }
+        if (target == null || !target.isDirectory) {
+            datasetSegments = emptyList()
+            datasetError = null
+            return
+        }
+        datasetFolderPath = target.absolutePath
+        if (config.datasetFolder != target.absolutePath) {
+            config = config.copy(datasetFolder = target.absolutePath)
+            saveConfig()
+        }
+        datasetSegments = DatasetStore.load(target)
+        datasetError = null
+        if (selectedSegmentIndex !in datasetSegments.map { it.index }) {
+            selectedSegmentIndex = datasetSegments.firstOrNull()?.index
+        }
+    }
+
+    fun refreshDataset() {
+        loadDataset(datasetFolderPath.takeIf { it.isNotBlank() }?.let { File(it) })
+    }
+
+    fun saveSegmentText(index: Int, text: String) {
+        val folder = datasetFolderPath.takeIf { it.isNotBlank() }?.let { File(it) } ?: return
+        try {
+            DatasetStore.updateText(folder, index, text)
+            datasetSegments = DatasetStore.load(folder)
+            log("Dataset: text of segment $index saved")
+        } catch (e: Exception) {
+            datasetError = e.message
+            log("Could not save the segment text: ${e.message}")
+        }
+    }
+
+    fun deleteSegment(index: Int) {
+        val folder = datasetFolderPath.takeIf { it.isNotBlank() }?.let { File(it) } ?: return
+        try {
+            DatasetStore.delete(folder, index)
+            datasetSegments = DatasetStore.load(folder)
+            selectedSegmentIndex = datasetSegments.firstOrNull { it.index != index }?.index
+            log("Dataset: segment $index deleted")
+        } catch (e: Exception) {
+            datasetError = e.message
+            log("Could not delete the segment: ${e.message}")
+        }
+    }
+
+    /** Appends the finished transcript to the configured dataset folder. */
+    private fun exportDatasetAutomatically(result: Transcript) {
+        val folderPath = config.datasetFolder
+        if (folderPath.isBlank()) {
+            log("Automatic dataset export is on but no folder is configured")
+            return
+        }
+        val folder = File(folderPath)
+        if (!folder.exists() && !folder.mkdirs()) {
+            log("Could not create the dataset folder $folderPath")
+            return
+        }
+        val before = DatasetExporter.existingSegments(folder)
+        try {
+            val exported = DatasetExporter.export(
+                transcript = result,
+                folder = folder,
+                options = DatasetExporter.Options(
+                    paddingMs = config.datasetPaddingMs,
+                    useCorrected = config.datasetUseCorrected,
+                    append = true,
+                ),
+                modelName = config.model,
+            )
+            log(
+                "Dataset updated automatically: ${exported.added} new segments " +
+                        "(${exported.segments} in total) in ${exported.folder.absolutePath}"
+            )
+            if (before == 0 && exported.segments > 0) {
+                log("Dataset created in ${exported.folder.absolutePath}")
+            }
+        } catch (e: Exception) {
+            log("Automatic dataset export failed: ${e.message}")
+        }
     }
 
     fun exportDataset(

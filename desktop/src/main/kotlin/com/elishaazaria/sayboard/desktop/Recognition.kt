@@ -10,6 +10,7 @@ import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
 import javax.sound.sampled.Mixer
 import javax.sound.sampled.TargetDataLine
+import java.io.File
 
 enum class RecognitionState { IDLE, LOADING, LISTENING, ERROR }
 
@@ -23,7 +24,9 @@ class RecognitionEngine {
     interface Listener {
         fun onState(state: RecognitionState)
         fun onPartial(text: String) = Unit
-        fun onFinal(text: String) = Unit
+
+        /** [audio] is set when the caller asked to keep the dictated audio. */
+        fun onFinal(text: String, audio: File? = null) = Unit
         fun onError(message: String)
     }
 
@@ -71,11 +74,16 @@ class RecognitionEngine {
         modelPath = null
     }
 
-    fun start(path: String, deviceName: String, listener: Listener) {
+    fun start(
+        path: String,
+        deviceName: String,
+        listener: Listener,
+        captureDir: File? = null,
+    ) {
         if (isRunning) return
         running = true
         cancelled = false
-        thread = Thread({ run(path, deviceName, listener) }, "saytypist-recognition").apply {
+        thread = Thread({ run(path, deviceName, listener, captureDir) }, "saytypist-recognition").apply {
             isDaemon = true
             start()
         }
@@ -94,8 +102,10 @@ class RecognitionEngine {
         stop()
     }
 
-    private fun run(path: String, deviceName: String, listener: Listener) {
+    private fun run(path: String, deviceName: String, listener: Listener, captureDir: File?) {
         var line: TargetDataLine? = null
+        val phrase = if (captureDir != null) java.io.ByteArrayOutputStream(16000 * 4) else null
+        var phraseNumber = 0
         try {
             listener.onState(RecognitionState.LOADING)
             val model = loadModel(path)
@@ -113,14 +123,20 @@ class RecognitionEngine {
                     break
                 }
                 if (read <= 0) continue
+                phrase?.write(buffer, 0, read)
                 if (recognizer.acceptWaveForm(buffer, read)) {
-                    emitFinal(recognizer.result, listener)
+                    val audio = phrase?.let {
+                        capturePhrase(it, ++phraseNumber, captureDir!!)
+                    }
+                    phrase?.reset()
+                    emitFinal(recognizer.result, listener, audio)
                 } else {
                     listener.onPartial(parse(recognizer.partialResult, "partial"))
                 }
             }
             if (!cancelled) {
-                emitFinal(recognizer.finalResult, listener)
+                val audio = phrase?.let { capturePhrase(it, ++phraseNumber, captureDir!!) }
+                emitFinal(recognizer.finalResult, listener, audio)
             }
             recognizer.close()
         } catch (e: Exception) {
@@ -138,9 +154,23 @@ class RecognitionEngine {
         }
     }
 
-    private fun emitFinal(result: String, listener: Listener) {
+    private fun emitFinal(result: String, listener: Listener, audio: java.io.File? = null) {
         val text = parse(result, "text").trim()
-        if (text.isNotEmpty()) listener.onFinal(text)
+        if (text.isNotEmpty()) {
+            listener.onFinal(text, audio)
+        } else {
+            audio?.delete()
+        }
+    }
+
+    /** Writes the captured phrase (without the silence around it) as a WAV. */
+    private fun capturePhrase(buffer: java.io.ByteArrayOutputStream, number: Int, dir: File): File? {
+        val pcm = buffer.toByteArray()
+        val range = SilenceTrimmer.speechRange(pcm)
+        if (range.last - range.first < SilenceTrimmer.SAMPLE_RATE / 5) return null // < 200 ms of speech
+        val file = File(dir, "phrase-%05d.wav".format(number))
+        writePcmWav(file, pcm, range.first, range.last - range.first)
+        return file
     }
 
     private fun parse(result: String, key: String): String {

@@ -40,11 +40,18 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -80,6 +87,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -193,7 +201,13 @@ internal fun LtrText(
     }
 }
 
-private enum class Screen { MODELS, TRANSCRIBE, SETTINGS, ABOUT }
+private enum class Screen { MODELS, TRANSCRIBE, DATASET, SETTINGS, ABOUT }
+
+private data class FolderRequest(
+    val title: String,
+    val start: File,
+    val onSelect: (File) -> Unit,
+)
 
 // ------------------------------------------------------------------------ shell
 
@@ -207,6 +221,7 @@ fun AppScreen(controller: AppController) {
             var pendingDownload by remember { mutableStateOf<CatalogModel?>(null) }
             var pendingFolder by remember { mutableStateOf<File?>(null) }
             var datasetFolder by remember { mutableStateOf<File?>(null) }
+            var folderRequest by remember { mutableStateOf<FolderRequest?>(null) }
 
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Box(Modifier.fillMaxSize()) {
@@ -217,8 +232,26 @@ fun AppScreen(controller: AppController) {
                             Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp)) {
                                 when (screen) {
                                     Screen.MODELS -> ModelsScreen(controller) { pendingDownload = it }
-                                    Screen.TRANSCRIBE -> TranscribeScreen(controller) { datasetFolder = it }
-                                    Screen.SETTINGS -> SettingsScreen(controller) { pendingFolder = it }
+                                    Screen.TRANSCRIBE -> TranscribeScreen(
+                                        controller,
+                                        onExportDataset = { datasetFolder = it },
+                                        pickFolder = { title, start, onSelect ->
+                                            folderRequest = FolderRequest(title, start, onSelect)
+                                        },
+                                    )
+                                    Screen.DATASET -> DatasetScreen(
+                                        controller,
+                                        pickFolder = { title, start, onSelect ->
+                                            folderRequest = FolderRequest(title, start, onSelect)
+                                        },
+                                    )
+                                    Screen.SETTINGS -> SettingsScreen(
+                                        controller,
+                                        onPickModelsFolder = { pendingFolder = it },
+                                        pickFolder = { title, start, onSelect ->
+                                            folderRequest = FolderRequest(title, start, onSelect)
+                                        },
+                                    )
                                     Screen.ABOUT -> AboutScreen(controller)
                                 }
                             }
@@ -239,6 +272,17 @@ fun AppScreen(controller: AppController) {
             }
             datasetFolder?.let { folder ->
                 DatasetDialog(controller, folder) { datasetFolder = null }
+            }
+            folderRequest?.let { request ->
+                FolderPickerDialog(
+                    title = request.title,
+                    start = request.start,
+                    onDismiss = { folderRequest = null },
+                    onSelect = { chosen ->
+                        folderRequest = null
+                        request.onSelect(chosen)
+                    },
+                )
             }
         }
     }
@@ -270,6 +314,9 @@ private fun SideRail(screen: Screen, onSelect: (Screen) -> Unit) {
         }
         RailItem(s["nav.transcribe"], Icons.Default.LibraryMusic, screen == Screen.TRANSCRIBE) {
             onSelect(Screen.TRANSCRIBE)
+        }
+        RailItem(s["nav.dataset"], Icons.Default.Storage, screen == Screen.DATASET) {
+            onSelect(Screen.DATASET)
         }
         Spacer(Modifier.weight(1f))
         RailItem(s["nav.settings"], Icons.Default.Settings, screen == Screen.SETTINGS) {
@@ -311,6 +358,7 @@ private fun TopBar(controller: AppController, screen: Screen) {
     val (title, subtitle) = when (screen) {
         Screen.MODELS -> s["nav.models"] to s["models.hint"]
         Screen.TRANSCRIBE -> s["transcribe.title"] to s["transcribe.subtitle"]
+        Screen.DATASET -> s["nav.dataset"] to s["datasets.folderHint"]
         Screen.SETTINGS -> s["nav.settings"] to s["settings.immediate"]
         Screen.ABOUT -> s["about.title"] to s.f("about.version", Version.NAME)
     }
@@ -319,30 +367,134 @@ private fun TopBar(controller: AppController, screen: Screen) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        }
-        StatusPill(controller.status)
-        Spacer(Modifier.width(10.dp))
-        LanguageButton(controller)
-        Spacer(Modifier.width(6.dp))
-        IconButton(onClick = { controller.toggleLog() }) {
-            Icon(
-                if (controller.config.logVisible) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (controller.config.logVisible) s["header.hideLog"] else s["header.showLog"],
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(10.dp))
+                StatusPill(controller.status)
+            }
+            Text(
+                subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
-        Spacer(Modifier.width(6.dp))
+        ShortcutChip(controller.config.hotkey)
+        Spacer(Modifier.width(10.dp))
+        LanguageMenu(controller)
+        Spacer(Modifier.width(4.dp))
+        Surface(
+            shape = CircleShape,
+            color = if (controller.config.logVisible) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            else Color.Transparent,
+        ) {
+            IconButton(onClick = { controller.toggleLog() }) {
+                Icon(
+                    if (controller.config.logVisible) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (controller.config.logVisible) s["header.hideLog"] else s["header.showLog"],
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
         val listening = controller.status == RecognitionState.LISTENING ||
                 controller.status == RecognitionState.LOADING
         Button(
             onClick = { controller.toggleDictation() },
             shape = RoundedCornerShape(50),
-            modifier = Modifier.height(44.dp),
+            modifier = Modifier.height(46.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 22.dp),
         ) {
-            Icon(if (listening) Icons.Default.Stop else Icons.Default.Mic, null, Modifier.size(18.dp))
+            Icon(if (listening) Icons.Default.Stop else Icons.Default.Mic, null, Modifier.size(19.dp))
             Spacer(Modifier.width(8.dp))
-            Text(if (listening) s["action.stop"] else s["action.start"], fontSize = 13.sp)
+            Text(if (listening) s["action.stop"] else s["action.start"], fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+/** Shows the global hotkey as a keyboard shortcut chip. */
+@Composable
+private fun ShortcutChip(hotkey: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, Line),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                Icons.Default.Keyboard,
+                null,
+                Modifier.size(15.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            LtrText(
+                hotkey.split("+").joinToString(" + "),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageMenu(controller: AppController) {
+    val s = LocalStrings.current
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+            border = BorderStroke(1.dp, Line),
+            modifier = Modifier.clickable { expanded = true },
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 12.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+            ) {
+                Icon(
+                    Icons.Default.Language,
+                    null,
+                    Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(7.dp))
+                Text(s.lang.label, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.Default.ExpandMore, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(200.dp),
+        ) {
+            Lang.values().forEach { lang ->
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(lang.label, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            if (lang == s.lang) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    null,
+                                    Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        controller.setLanguage(lang)
+                    },
+                )
+            }
         }
     }
 }
@@ -759,7 +911,11 @@ private fun AvailableModelRow(model: CatalogModel, installed: Boolean, onDownloa
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TranscribeScreen(controller: AppController, onExportDataset: (File) -> Unit) {
+private fun TranscribeScreen(
+    controller: AppController,
+    onExportDataset: (File) -> Unit,
+    pickFolder: (String, File, (File) -> Unit) -> Unit,
+) {
     val s = LocalStrings.current
     val file = controller.transcriptionFile
     val transcript = controller.transcript
@@ -944,7 +1100,12 @@ private fun TranscribeScreen(controller: AppController, onExportDataset: (File) 
                         enabled = transcript != null,
                     ) { Text(s["transcribe.save"], fontSize = 12.sp) }
                     FilledTonalButton(
-                        onClick = { pickDirectory(s["dataset.chooseFolder"])?.let(onExportDataset) },
+                        onClick = {
+                            val start = controller.config.datasetFolder
+                                .takeIf { it.isNotBlank() }?.let { File(it) }
+                                ?: controller.modelsFolder()
+                            pickFolder(s["dataset.chooseFolder"], start) { onExportDataset(it) }
+                        },
                         enabled = transcript?.pcmFile != null && !controller.datasetExporting,
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.height(34.dp),
@@ -999,10 +1160,326 @@ private fun TranscribeScreen(controller: AppController, onExportDataset: (File) 
     }
 }
 
+// ----------------------------------------------------------------------- dataset
+
+@Composable
+private fun DatasetScreen(
+    controller: AppController,
+    pickFolder: (String, File, (File) -> Unit) -> Unit,
+) {
+    val s = LocalStrings.current
+    val player = remember { AudioPlayer() }
+    var playing by remember { mutableStateOf<Int?>(null) }
+    var search by remember { mutableStateOf("") }
+    var playError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { controller.loadDataset(null) }
+    DisposableEffect(Unit) { onDispose { player.stop() } }
+
+    val segments = remember(controller.datasetSegments, search) {
+        val all = controller.datasetSegments
+        if (search.isBlank()) all else all.filter {
+            it.text.contains(search, true) || it.rawText.contains(search, true) || it.index.toString().contains(search)
+        }
+    }
+    val selected = controller.datasetSegments.firstOrNull { it.index == controller.selectedSegmentIndex }
+    val totalSeconds = controller.datasetSegments.sumOf { it.durationSeconds }
+    val folder = controller.datasetFolderPath.takeIf { it.isNotBlank() }?.let { File(it) }
+
+    fun togglePlay(segment: DatasetSegment) {
+        playError = null
+        if (playing == segment.index) {
+            player.stop()
+            playing = null
+            return
+        }
+        try {
+            player.play(segment.wav) { playing = null }
+            playing = segment.index
+        } catch (e: Exception) {
+            playing = null
+            playError = s.f("datasetTab.playFailed", e.message ?: "")
+        }
+    }
+
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Card(
+            shape = CardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, Line),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
+                        Icon(
+                            Icons.Default.Storage,
+                            null,
+                            Modifier.padding(9.dp).size(20.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        if (folder == null) {
+                            Text(s["datasetTab.none"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            LtrText(folder.absolutePath, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+                            Text(
+                                s.f(
+                                    "datasetTab.summary",
+                                    controller.datasetSegments.size,
+                                    formatTimecode(totalSeconds),
+                                ),
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        singleLine = true,
+                        placeholder = { Text(s["datasetTab.search"], fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(16.dp)) },
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.width(240.dp).height(FIELD_HEIGHT),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            pickFolder(s["datasetTab.chooseFolder"], folder ?: controller.modelsFolder()) { chosen ->
+                                controller.loadDataset(chosen)
+                            }
+                        },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.height(40.dp),
+                    ) {
+                        Icon(Icons.Default.FolderOpen, null, Modifier.size(15.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(s["action.changeFolder"], fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    IconButton(onClick = { controller.refreshDataset() }) {
+                        Icon(Icons.Default.Tune, s["action.refresh"], Modifier.size(18.dp))
+                    }
+                }
+                playError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                }
+            }
+        }
+
+        Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Card(
+                modifier = Modifier.weight(0.45f).fillMaxHeight(),
+                shape = CardShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, Line),
+            ) {
+                if (segments.isEmpty()) {
+                    EmptyHint(Icons.Default.Storage, s["datasetTab.none"])
+                } else {
+                    val listState = rememberLazyListState()
+                    Box(Modifier.fillMaxSize().padding(10.dp)) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize().padding(end = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            items(segments, key = { it.index }) { segment ->
+                                val isSelected = controller.selectedSegmentIndex == segment.index
+                                Surface(
+                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f) else Line),
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        controller.selectedSegmentIndex = segment.index
+                                    },
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    ) {
+                                        IconButton(
+                                            onClick = { togglePlay(segment) },
+                                            modifier = Modifier.size(34.dp),
+                                        ) {
+                                            Icon(
+                                                if (playing == segment.index) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                                s["datasetTab.play"],
+                                                Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                        Spacer(Modifier.width(4.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                LtrText(
+                                                    String.format(java.util.Locale.US, "%04d", segment.index),
+                                                    fontSize = 10.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    fontFamily = FontFamily.Monospace,
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                                LtrText(
+                                                    formatTimecode(segment.durationSeconds),
+                                                    fontSize = 10.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                            Text(
+                                                segment.text.ifBlank { "—" },
+                                                fontSize = 12.sp,
+                                                maxLines = 2,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        VerticalScrollbar(
+                            adapter = rememberScrollbarAdapter(listState),
+                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                        )
+                    }
+                }
+            }
+
+            Card(
+                modifier = Modifier.weight(0.55f).fillMaxHeight(),
+                shape = CardShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, Line),
+            ) {
+                if (selected == null) {
+                    EmptyHint(Icons.Default.LibraryMusic, s["datasetTab.select"])
+                } else {
+                    SegmentEditor(
+                        controller = controller,
+                        segment = selected,
+                        playing = playing == selected.index,
+                        onTogglePlay = { togglePlay(selected) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SegmentEditor(
+    controller: AppController,
+    segment: DatasetSegment,
+    playing: Boolean,
+    onTogglePlay: () -> Unit,
+) {
+    val s = LocalStrings.current
+    var draft by remember(segment.index) { mutableStateOf(segment.text) }
+    var confirmDelete by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().padding(18.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                String.format(java.util.Locale.US, "%04d", segment.index),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+            )
+            Spacer(Modifier.width(10.dp))
+            TinyChip(formatTimecode(segment.durationSeconds))
+            Spacer(Modifier.weight(1f))
+            FilledTonalButton(
+                onClick = onTogglePlay,
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Icon(if (playing) Icons.Default.Stop else Icons.Default.PlayArrow, null, Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(if (playing) s["datasetTab.stop"] else s["datasetTab.play"], fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(6.dp))
+            IconButton(onClick = { confirmDelete = true }) {
+                Icon(Icons.Default.Delete, s["datasetTab.delete"], Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(s["datasetTab.text"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp, max = 200.dp),
+        )
+        if (segment.rawText.isNotBlank() && segment.rawText != segment.text) {
+            Spacer(Modifier.height(10.dp))
+            Text(s["datasetTab.raw"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(4.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SelectionContainer {
+                    Text(segment.rawText, fontSize = 12.sp, modifier = Modifier.padding(10.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(
+                onClick = { controller.saveSegmentText(segment.index, draft) },
+                enabled = draft != segment.text,
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(Icons.Default.Save, null, Modifier.size(15.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(s["datasetTab.save"], fontSize = 12.sp)
+            }
+            Spacer(Modifier.width(8.dp))
+            TextButton(onClick = { draft = segment.text }, enabled = draft != segment.text) {
+                Text(s["datasetTab.revert"], fontSize = 12.sp)
+            }
+            Spacer(Modifier.weight(1f))
+            LtrText(
+                segment.wav.name,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+        controller.datasetError?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+        }
+    }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(s["datasetTab.deleteTitle"], fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+            text = { Text(s["datasetTab.deleteText"], fontSize = 13.sp) },
+            confirmButton = {
+                Button(onClick = {
+                    confirmDelete = false
+                    controller.deleteSegment(segment.index)
+                }) { Text(s["datasetTab.delete"]) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(s["action.cancel"]) } },
+        )
+    }
+}
+
 // ---------------------------------------------------------------------- settings
 
 @Composable
-private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Unit) {
+private fun SettingsScreen(
+    controller: AppController,
+    onPickModelsFolder: (File) -> Unit,
+    pickFolder: (String, File, (File) -> Unit) -> Unit,
+) {
     val s = LocalStrings.current
     val config = controller.config
     var hotkey by remember(config.hotkey) { mutableStateOf(config.hotkey) }
@@ -1029,6 +1506,10 @@ private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Un
     var aiPrompt by remember(ai) { mutableStateOf(ai.prompt) }
     var aiDictation by remember(ai) { mutableStateOf(ai.correctDictation) }
     var aiTranscripts by remember(ai) { mutableStateOf(ai.correctTranscripts) }
+
+    var datasetPadding by remember(config.datasetPaddingMs) {
+        mutableStateOf(config.datasetPaddingMs.toString())
+    }
 
     fun currentAi(): AiSettings = AiSettings(
         enabled = aiEnabled,
@@ -1206,6 +1687,80 @@ private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Un
             }
         }
 
+        SectionCard(s["datasets.section"]) {
+            Text(s["datasets.folderHint"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    if (config.datasetFolder.isBlank()) {
+                        Text(s["datasets.notConfigured"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        SelectionContainer {
+                            LtrText(config.datasetFolder, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                        }
+                        LtrText(
+                            s.f("datasets.existing", controller.existingDatasetSegments(File(config.datasetFolder))),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Button(
+                    onClick = {
+                        pickFolder(s["datasets.chooseFolder"], controller.modelsFolder()) { chosen ->
+                            controller.applySettings(config.copy(datasetFolder = chosen.absolutePath))
+                        }
+                    },
+                    shape = RoundedCornerShape(50),
+                ) { Text(s["action.changeFolder"], fontSize = 12.sp) }
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        val folder = File(config.datasetFolder)
+                        if (folder.isDirectory) openFolder(folder)
+                    },
+                    enabled = config.datasetFolder.isNotBlank() && File(config.datasetFolder).isDirectory,
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Icon(Icons.Default.FolderOpen, null, Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(s["datasets.open"], fontSize = 12.sp)
+                }
+                Spacer(Modifier.width(8.dp))
+                FieldRow(s["datasets.padding"]) {
+                    OutlinedTextField(
+                        value = datasetPadding,
+                        onValueChange = { value ->
+                            datasetPadding = value.filter { it.isDigit() }.take(5)
+                            controller.applySettings(
+                                config.copy(datasetPaddingMs = datasetPadding.toIntOrNull() ?: 150)
+                            )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.width(110.dp).height(FIELD_HEIGHT),
+                    )
+                }
+            }
+            ToggleRow(s["datasets.auto"], config.datasetAutoExport) {
+                controller.applySettings(config.copy(datasetAutoExport = it))
+            }
+            ToggleRow(s["datasets.captureDictation"], config.datasetCaptureDictation) {
+                controller.applySettings(config.copy(datasetCaptureDictation = it))
+            }
+            Text(s["datasets.captureHint"], fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ToggleRow(s["datasets.useCorrected"], config.datasetUseCorrected) {
+                controller.applySettings(config.copy(datasetUseCorrected = it))
+            }
+            Text(s["datasets.autoOff"], fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
         SectionCard(s["settings.storage"]) {
             Text(s["settings.storageText"], fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
@@ -1230,9 +1785,12 @@ private fun SettingsScreen(controller: AppController, onPickFolder: (File) -> Un
                 }
             }
             Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = { pickDirectory()?.let(onPickFolder) }, shape = RoundedCornerShape(50)) {
-                    Text(s["action.changeFolder"], fontSize = 12.sp)
-                }
+                Button(
+                    onClick = {
+                        pickFolder(s["action.changeFolder"], controller.modelsFolder()) { onPickModelsFolder(it) }
+                    },
+                    shape = RoundedCornerShape(50),
+                ) { Text(s["action.changeFolder"], fontSize = 12.sp) }
                 Spacer(Modifier.width(8.dp))
                 OutlinedButton(onClick = { openFolder(controller.modelsFolder()) }, shape = RoundedCornerShape(50)) {
                     Icon(Icons.Default.FolderOpen, null, Modifier.size(15.dp))
@@ -1485,7 +2043,9 @@ private fun DatasetDialog(controller: AppController, folder: File, onDismiss: ()
     val s = LocalStrings.current
     val transcript = controller.transcript
     var padding by remember { mutableStateOf(controller.config.datasetPaddingMs.toString()) }
-    var useCorrected by remember(transcript) { mutableStateOf(transcript?.hasCorrections ?: false) }
+    var useCorrected by remember(transcript) { mutableStateOf(controller.config.datasetUseCorrected) }
+    val existing = remember(folder) { controller.existingDatasetSegments(folder) }
+    var append by remember(folder) { mutableStateOf(existing > 0) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(s["dataset.title"], fontSize = 17.sp, fontWeight = FontWeight.Bold) },
@@ -1506,6 +2066,20 @@ private fun DatasetDialog(controller: AppController, folder: File, onDismiss: ()
                     Checkbox(checked = useCorrected, onCheckedChange = { useCorrected = it })
                     Spacer(Modifier.width(8.dp))
                     Text(s["dataset.useCorrected"], fontSize = 12.sp)
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = append, onCheckedChange = { append = it })
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(s["datasets.append"], fontSize = 12.sp)
+                        Text(
+                            if (!append && existing > 0) s["datasets.fresh"]
+                            else s.f("datasets.existing", existing),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(8.dp))
                 Surface(
@@ -1535,7 +2109,11 @@ private fun DatasetDialog(controller: AppController, folder: File, onDismiss: ()
                     controller.applySettings(controller.config.copy(datasetPaddingMs = ms))
                     controller.exportDataset(
                         folder = folder,
-                        options = DatasetExporter.Options(paddingMs = ms, useCorrected = useCorrected),
+                        options = DatasetExporter.Options(
+                            paddingMs = ms,
+                            useCorrected = useCorrected,
+                            append = append,
+                        ),
                         modelName = controller.config.model,
                     )
                 },
